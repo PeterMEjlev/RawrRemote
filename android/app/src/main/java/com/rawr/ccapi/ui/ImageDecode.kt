@@ -39,11 +39,26 @@ internal fun decodeSampledImageWithSize(
 ): DecodedImage? {
     val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
     BitmapFactory.decodeByteArray(bytes, 0, bytes.size, bounds)
+
+    // Upright frames need no pixel rotation, so we decode them straight into a
+    // GPU-resident HARDWARE bitmap: it skips the per-draw texture upload and keeps
+    // the pixels off the Java heap (far less GC churn while scrolling). Rotated
+    // frames must stay software because the orientation Matrix below can't operate
+    // on a hardware bitmap.
+    val isUpright = orientation == ExifInterface.ORIENTATION_NORMAL ||
+        orientation == ExifInterface.ORIENTATION_UNDEFINED
     val opts = BitmapFactory.Options().apply {
         inSampleSize = sampleSize(bounds.outWidth, reqWidth)
+        if (isUpright) inPreferredConfig = Bitmap.Config.HARDWARE
     }
-    val bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.size, opts) ?: return null
-    val oriented = applyOrientation(bitmap, orientation)
+    var bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.size, opts)
+    if (bitmap == null && isUpright) {
+        // Rare: a decoder rejected HARDWARE config — retry as a software bitmap.
+        opts.inPreferredConfig = Bitmap.Config.ARGB_8888
+        bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.size, opts)
+    }
+    val decoded = bitmap ?: return null
+    val oriented = if (isUpright) decoded else applyOrientation(decoded, orientation)
     val (width, height) = orientedSourceSize(bounds.outWidth, bounds.outHeight, orientation)
         ?: (oriented.width to oriented.height)
     return DecodedImage(oriented.asImageBitmap(), width, height)

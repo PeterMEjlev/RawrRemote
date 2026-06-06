@@ -113,14 +113,12 @@ object CameraImageLoader {
 }
 
 @Composable
-fun GridThumb(path: String, columns: Int, modifier: Modifier = Modifier) {
-    // Decode the sharp image to roughly the cell's on-screen size: the more
-    // columns, the smaller each cell, the smaller (and cheaper to draw) the bitmap.
-    val sharpWidth = when {
-        columns <= 2 -> 720
-        columns <= 4 -> 480
-        else -> 360
-    }
+fun GridThumb(path: String, cellWidthPx: Int, modifier: Modifier = Modifier) {
+    // Decode the sharp image to the cell's real on-screen pixel width, so we never
+    // decode (or upload to the GPU) a bitmap bigger than the cell actually draws.
+    // This is what keeps scrolling smooth as columns grow: more columns = smaller
+    // cells = smaller bitmaps, rather than the old fixed, oversized buckets.
+    val sharpWidth = cellWidthPx.coerceIn(160, 1024)
     val image by produceState<ImageBitmap?>(initialValue = null, key1 = path, key2 = sharpWidth) {
         // If the sharp image is already cached, use it straight away; otherwise
         // show the fast embedded thumbnail first, then upgrade to the sharp one.

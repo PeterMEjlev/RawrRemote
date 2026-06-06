@@ -107,6 +107,7 @@ import androidx.compose.ui.graphics.vector.path
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntSize
@@ -510,8 +511,15 @@ private fun PhotoGrid(vm: MainViewModel) {
         // phone, more on a tablet); pinch-to-zoom still overrides it.
         val autoColumns = (maxWidth.value / 200f).roundToInt().coerceIn(1, 10)
         LaunchedEffect(autoColumns) { vm.applyAutoColumns(autoColumns) }
+        // The cell's real on-screen pixel width (grid width minus the 8dp content
+        // padding each side and the 8dp gaps between columns). Thumbnails decode
+        // to this size, so they never end up larger than what's actually drawn.
+        val columns = vm.gridColumns
+        val cellWidthPx = with(LocalDensity.current) {
+            ((maxWidth - 16.dp - 8.dp * (columns - 1)) / columns).toPx()
+        }.roundToInt().coerceAtLeast(1)
         LazyVerticalGrid(
-            columns = GridCells.Fixed(vm.gridColumns),
+            columns = GridCells.Fixed(columns),
             modifier = Modifier.fillMaxSize().pinchToZoomColumns(
                 current = { vm.gridColumns },
                 onChange = { vm.setGridColumnCount(it) },
@@ -520,7 +528,7 @@ private fun PhotoGrid(vm: MainViewModel) {
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            gridItems(vm.visibleFiles, key = { it.url }, contentType = { "photo" }) { f -> PhotoCell(vm, f) }
+            gridItems(vm.visibleFiles, key = { it.url }, contentType = { "photo" }) { f -> PhotoCell(vm, f, cellWidthPx) }
             if (vm.pageCount > 1) {
                 item(span = { GridItemSpan(maxLineSpan) }) { Pager(vm) }
             }
@@ -555,7 +563,7 @@ internal fun Modifier.pinchToZoomColumns(
 }
 
 @Composable
-private fun PhotoCell(vm: MainViewModel, f: RawFile) {
+private fun PhotoCell(vm: MainViewModel, f: RawFile, cellWidthPx: Int) {
     val checked = vm.selected.containsKey(f.url)
     val border = if (checked) {
         BorderStroke(3.dp, MaterialTheme.colorScheme.primary)
@@ -572,7 +580,7 @@ private fun PhotoCell(vm: MainViewModel, f: RawFile) {
     ) {
         Column {
             Box(Modifier.fillMaxWidth().aspectRatio(3f / 2f)) {
-                GridThumb(f.path, columns = vm.gridColumns, modifier = Modifier.fillMaxSize())
+                GridThumb(f.path, cellWidthPx = cellWidthPx, modifier = Modifier.fillMaxSize())
                 // Selection badge. The Checkbox consumes its own taps, so
                 // tapping it toggles selection while tapping the rest of the
                 // cell opens the full-screen preview.

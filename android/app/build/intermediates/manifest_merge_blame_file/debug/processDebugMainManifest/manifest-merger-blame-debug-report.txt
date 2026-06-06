@@ -76,130 +76,131 @@
 46-->C:\Users\Torsten\Desktop\RawrRemote\android\app\src\main\AndroidManifest.xml:28:9-69
 47        android:supportsRtl="true"
 47-->C:\Users\Torsten\Desktop\RawrRemote\android\app\src\main\AndroidManifest.xml:29:9-35
-48        android:theme="@style/Theme.RawrRemote" >
-48-->C:\Users\Torsten\Desktop\RawrRemote\android\app\src\main\AndroidManifest.xml:30:9-48
-49        <activity
-49-->C:\Users\Torsten\Desktop\RawrRemote\android\app\src\main\AndroidManifest.xml:32:9-40:20
-50            android:name="com.rawr.ccapi.ui.MainActivity"
-50-->C:\Users\Torsten\Desktop\RawrRemote\android\app\src\main\AndroidManifest.xml:33:13-44
-51            android:exported="true"
-51-->C:\Users\Torsten\Desktop\RawrRemote\android\app\src\main\AndroidManifest.xml:34:13-36
-52            android:label="@string/app_name" >
-52-->C:\Users\Torsten\Desktop\RawrRemote\android\app\src\main\AndroidManifest.xml:35:13-45
-53            <intent-filter>
-53-->C:\Users\Torsten\Desktop\RawrRemote\android\app\src\main\AndroidManifest.xml:36:13-39:29
-54                <action android:name="android.intent.action.MAIN" />
-54-->C:\Users\Torsten\Desktop\RawrRemote\android\app\src\main\AndroidManifest.xml:37:17-69
-54-->C:\Users\Torsten\Desktop\RawrRemote\android\app\src\main\AndroidManifest.xml:37:25-66
-55
-56                <category android:name="android.intent.category.LAUNCHER" />
-56-->C:\Users\Torsten\Desktop\RawrRemote\android\app\src\main\AndroidManifest.xml:38:17-77
-56-->C:\Users\Torsten\Desktop\RawrRemote\android\app\src\main\AndroidManifest.xml:38:27-74
-57            </intent-filter>
-58        </activity>
-59
-60        <service
-60-->C:\Users\Torsten\Desktop\RawrRemote\android\app\src\main\AndroidManifest.xml:42:9-45:56
-61            android:name="com.rawr.ccapi.download.DownloadService"
-61-->C:\Users\Torsten\Desktop\RawrRemote\android\app\src\main\AndroidManifest.xml:43:13-53
-62            android:exported="false"
-62-->C:\Users\Torsten\Desktop\RawrRemote\android\app\src\main\AndroidManifest.xml:44:13-37
-63            android:foregroundServiceType="dataSync" />
-63-->C:\Users\Torsten\Desktop\RawrRemote\android\app\src\main\AndroidManifest.xml:45:13-53
-64
-65        <!--
-66             Exposes a local .CR3 as a content:// URI so it can be shared to
-67             Lightroom etc. via the system share sheet.
-68        -->
-69        <provider
-70            android:name="androidx.core.content.FileProvider"
-70-->C:\Users\Torsten\Desktop\RawrRemote\android\app\src\main\AndroidManifest.xml:50:13-62
-71            android:authorities="com.rawr.ccapi.fileprovider"
-71-->C:\Users\Torsten\Desktop\RawrRemote\android\app\src\main\AndroidManifest.xml:51:13-64
-72            android:exported="false"
-72-->C:\Users\Torsten\Desktop\RawrRemote\android\app\src\main\AndroidManifest.xml:52:13-37
-73            android:grantUriPermissions="true" >
-73-->C:\Users\Torsten\Desktop\RawrRemote\android\app\src\main\AndroidManifest.xml:53:13-47
-74            <meta-data
-74-->C:\Users\Torsten\Desktop\RawrRemote\android\app\src\main\AndroidManifest.xml:54:13-56:54
-75                android:name="android.support.FILE_PROVIDER_PATHS"
-75-->C:\Users\Torsten\Desktop\RawrRemote\android\app\src\main\AndroidManifest.xml:55:17-67
-76                android:resource="@xml/file_paths" />
-76-->C:\Users\Torsten\Desktop\RawrRemote\android\app\src\main\AndroidManifest.xml:56:17-51
-77        </provider>
-78
-79        <activity
-79-->[androidx.compose.ui:ui-tooling-android:1.7.6] C:\Users\Torsten\.gradle\caches\8.11.1\transforms\0cdb037e5611f7fde256d06e2a8835e3\transformed\ui-tooling-release\AndroidManifest.xml:23:9-25:39
-80            android:name="androidx.compose.ui.tooling.PreviewActivity"
-80-->[androidx.compose.ui:ui-tooling-android:1.7.6] C:\Users\Torsten\.gradle\caches\8.11.1\transforms\0cdb037e5611f7fde256d06e2a8835e3\transformed\ui-tooling-release\AndroidManifest.xml:24:13-71
-81            android:exported="true" />
-81-->[androidx.compose.ui:ui-tooling-android:1.7.6] C:\Users\Torsten\.gradle\caches\8.11.1\transforms\0cdb037e5611f7fde256d06e2a8835e3\transformed\ui-tooling-release\AndroidManifest.xml:25:13-36
-82
-83        <provider
-83-->[androidx.emoji2:emoji2:1.3.0] C:\Users\Torsten\.gradle\caches\8.11.1\transforms\dbb6aba12e8f4688e96f051321cbac9d\transformed\emoji2-1.3.0\AndroidManifest.xml:24:9-32:20
-84            android:name="androidx.startup.InitializationProvider"
-84-->[androidx.emoji2:emoji2:1.3.0] C:\Users\Torsten\.gradle\caches\8.11.1\transforms\dbb6aba12e8f4688e96f051321cbac9d\transformed\emoji2-1.3.0\AndroidManifest.xml:25:13-67
-85            android:authorities="com.rawr.ccapi.androidx-startup"
-85-->[androidx.emoji2:emoji2:1.3.0] C:\Users\Torsten\.gradle\caches\8.11.1\transforms\dbb6aba12e8f4688e96f051321cbac9d\transformed\emoji2-1.3.0\AndroidManifest.xml:26:13-68
-86            android:exported="false" >
-86-->[androidx.emoji2:emoji2:1.3.0] C:\Users\Torsten\.gradle\caches\8.11.1\transforms\dbb6aba12e8f4688e96f051321cbac9d\transformed\emoji2-1.3.0\AndroidManifest.xml:27:13-37
-87            <meta-data
-87-->[androidx.emoji2:emoji2:1.3.0] C:\Users\Torsten\.gradle\caches\8.11.1\transforms\dbb6aba12e8f4688e96f051321cbac9d\transformed\emoji2-1.3.0\AndroidManifest.xml:29:13-31:52
-88                android:name="androidx.emoji2.text.EmojiCompatInitializer"
-88-->[androidx.emoji2:emoji2:1.3.0] C:\Users\Torsten\.gradle\caches\8.11.1\transforms\dbb6aba12e8f4688e96f051321cbac9d\transformed\emoji2-1.3.0\AndroidManifest.xml:30:17-75
-89                android:value="androidx.startup" />
-89-->[androidx.emoji2:emoji2:1.3.0] C:\Users\Torsten\.gradle\caches\8.11.1\transforms\dbb6aba12e8f4688e96f051321cbac9d\transformed\emoji2-1.3.0\AndroidManifest.xml:31:17-49
-90            <meta-data
-90-->[androidx.lifecycle:lifecycle-process:2.8.7] C:\Users\Torsten\.gradle\caches\8.11.1\transforms\fecdefc21d864bc98a5b7c28bd337d3b\transformed\lifecycle-process-2.8.7\AndroidManifest.xml:29:13-31:52
-91                android:name="androidx.lifecycle.ProcessLifecycleInitializer"
-91-->[androidx.lifecycle:lifecycle-process:2.8.7] C:\Users\Torsten\.gradle\caches\8.11.1\transforms\fecdefc21d864bc98a5b7c28bd337d3b\transformed\lifecycle-process-2.8.7\AndroidManifest.xml:30:17-78
-92                android:value="androidx.startup" />
-92-->[androidx.lifecycle:lifecycle-process:2.8.7] C:\Users\Torsten\.gradle\caches\8.11.1\transforms\fecdefc21d864bc98a5b7c28bd337d3b\transformed\lifecycle-process-2.8.7\AndroidManifest.xml:31:17-49
-93            <meta-data
-93-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\Torsten\.gradle\caches\8.11.1\transforms\9cb5359e4ff6f34dce519549fc4f2dfc\transformed\profileinstaller-1.3.1\AndroidManifest.xml:29:13-31:52
-94                android:name="androidx.profileinstaller.ProfileInstallerInitializer"
-94-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\Torsten\.gradle\caches\8.11.1\transforms\9cb5359e4ff6f34dce519549fc4f2dfc\transformed\profileinstaller-1.3.1\AndroidManifest.xml:30:17-85
-95                android:value="androidx.startup" />
-95-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\Torsten\.gradle\caches\8.11.1\transforms\9cb5359e4ff6f34dce519549fc4f2dfc\transformed\profileinstaller-1.3.1\AndroidManifest.xml:31:17-49
-96        </provider>
-97
-98        <receiver
-98-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\Torsten\.gradle\caches\8.11.1\transforms\9cb5359e4ff6f34dce519549fc4f2dfc\transformed\profileinstaller-1.3.1\AndroidManifest.xml:34:9-52:20
-99            android:name="androidx.profileinstaller.ProfileInstallReceiver"
-99-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\Torsten\.gradle\caches\8.11.1\transforms\9cb5359e4ff6f34dce519549fc4f2dfc\transformed\profileinstaller-1.3.1\AndroidManifest.xml:35:13-76
-100            android:directBootAware="false"
-100-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\Torsten\.gradle\caches\8.11.1\transforms\9cb5359e4ff6f34dce519549fc4f2dfc\transformed\profileinstaller-1.3.1\AndroidManifest.xml:36:13-44
-101            android:enabled="true"
-101-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\Torsten\.gradle\caches\8.11.1\transforms\9cb5359e4ff6f34dce519549fc4f2dfc\transformed\profileinstaller-1.3.1\AndroidManifest.xml:37:13-35
-102            android:exported="true"
-102-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\Torsten\.gradle\caches\8.11.1\transforms\9cb5359e4ff6f34dce519549fc4f2dfc\transformed\profileinstaller-1.3.1\AndroidManifest.xml:38:13-36
-103            android:permission="android.permission.DUMP" >
-103-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\Torsten\.gradle\caches\8.11.1\transforms\9cb5359e4ff6f34dce519549fc4f2dfc\transformed\profileinstaller-1.3.1\AndroidManifest.xml:39:13-57
-104            <intent-filter>
-104-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\Torsten\.gradle\caches\8.11.1\transforms\9cb5359e4ff6f34dce519549fc4f2dfc\transformed\profileinstaller-1.3.1\AndroidManifest.xml:40:13-42:29
-105                <action android:name="androidx.profileinstaller.action.INSTALL_PROFILE" />
-105-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\Torsten\.gradle\caches\8.11.1\transforms\9cb5359e4ff6f34dce519549fc4f2dfc\transformed\profileinstaller-1.3.1\AndroidManifest.xml:41:17-91
-105-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\Torsten\.gradle\caches\8.11.1\transforms\9cb5359e4ff6f34dce519549fc4f2dfc\transformed\profileinstaller-1.3.1\AndroidManifest.xml:41:25-88
-106            </intent-filter>
-107            <intent-filter>
-107-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\Torsten\.gradle\caches\8.11.1\transforms\9cb5359e4ff6f34dce519549fc4f2dfc\transformed\profileinstaller-1.3.1\AndroidManifest.xml:43:13-45:29
-108                <action android:name="androidx.profileinstaller.action.SKIP_FILE" />
-108-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\Torsten\.gradle\caches\8.11.1\transforms\9cb5359e4ff6f34dce519549fc4f2dfc\transformed\profileinstaller-1.3.1\AndroidManifest.xml:44:17-85
-108-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\Torsten\.gradle\caches\8.11.1\transforms\9cb5359e4ff6f34dce519549fc4f2dfc\transformed\profileinstaller-1.3.1\AndroidManifest.xml:44:25-82
-109            </intent-filter>
-110            <intent-filter>
-110-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\Torsten\.gradle\caches\8.11.1\transforms\9cb5359e4ff6f34dce519549fc4f2dfc\transformed\profileinstaller-1.3.1\AndroidManifest.xml:46:13-48:29
-111                <action android:name="androidx.profileinstaller.action.SAVE_PROFILE" />
-111-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\Torsten\.gradle\caches\8.11.1\transforms\9cb5359e4ff6f34dce519549fc4f2dfc\transformed\profileinstaller-1.3.1\AndroidManifest.xml:47:17-88
-111-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\Torsten\.gradle\caches\8.11.1\transforms\9cb5359e4ff6f34dce519549fc4f2dfc\transformed\profileinstaller-1.3.1\AndroidManifest.xml:47:25-85
-112            </intent-filter>
-113            <intent-filter>
-113-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\Torsten\.gradle\caches\8.11.1\transforms\9cb5359e4ff6f34dce519549fc4f2dfc\transformed\profileinstaller-1.3.1\AndroidManifest.xml:49:13-51:29
-114                <action android:name="androidx.profileinstaller.action.BENCHMARK_OPERATION" />
-114-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\Torsten\.gradle\caches\8.11.1\transforms\9cb5359e4ff6f34dce519549fc4f2dfc\transformed\profileinstaller-1.3.1\AndroidManifest.xml:50:17-95
-114-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\Torsten\.gradle\caches\8.11.1\transforms\9cb5359e4ff6f34dce519549fc4f2dfc\transformed\profileinstaller-1.3.1\AndroidManifest.xml:50:25-92
-115            </intent-filter>
-116        </receiver>
-117    </application>
-118
-119</manifest>
+48        android:testOnly="true"
+49        android:theme="@style/Theme.RawrRemote" >
+49-->C:\Users\Torsten\Desktop\RawrRemote\android\app\src\main\AndroidManifest.xml:30:9-48
+50        <activity
+50-->C:\Users\Torsten\Desktop\RawrRemote\android\app\src\main\AndroidManifest.xml:32:9-40:20
+51            android:name="com.rawr.ccapi.ui.MainActivity"
+51-->C:\Users\Torsten\Desktop\RawrRemote\android\app\src\main\AndroidManifest.xml:33:13-44
+52            android:exported="true"
+52-->C:\Users\Torsten\Desktop\RawrRemote\android\app\src\main\AndroidManifest.xml:34:13-36
+53            android:label="@string/app_name" >
+53-->C:\Users\Torsten\Desktop\RawrRemote\android\app\src\main\AndroidManifest.xml:35:13-45
+54            <intent-filter>
+54-->C:\Users\Torsten\Desktop\RawrRemote\android\app\src\main\AndroidManifest.xml:36:13-39:29
+55                <action android:name="android.intent.action.MAIN" />
+55-->C:\Users\Torsten\Desktop\RawrRemote\android\app\src\main\AndroidManifest.xml:37:17-69
+55-->C:\Users\Torsten\Desktop\RawrRemote\android\app\src\main\AndroidManifest.xml:37:25-66
+56
+57                <category android:name="android.intent.category.LAUNCHER" />
+57-->C:\Users\Torsten\Desktop\RawrRemote\android\app\src\main\AndroidManifest.xml:38:17-77
+57-->C:\Users\Torsten\Desktop\RawrRemote\android\app\src\main\AndroidManifest.xml:38:27-74
+58            </intent-filter>
+59        </activity>
+60
+61        <service
+61-->C:\Users\Torsten\Desktop\RawrRemote\android\app\src\main\AndroidManifest.xml:42:9-45:56
+62            android:name="com.rawr.ccapi.download.DownloadService"
+62-->C:\Users\Torsten\Desktop\RawrRemote\android\app\src\main\AndroidManifest.xml:43:13-53
+63            android:exported="false"
+63-->C:\Users\Torsten\Desktop\RawrRemote\android\app\src\main\AndroidManifest.xml:44:13-37
+64            android:foregroundServiceType="dataSync" />
+64-->C:\Users\Torsten\Desktop\RawrRemote\android\app\src\main\AndroidManifest.xml:45:13-53
+65
+66        <!--
+67             Exposes a local .CR3 as a content:// URI so it can be shared to
+68             Lightroom etc. via the system share sheet.
+69        -->
+70        <provider
+71            android:name="androidx.core.content.FileProvider"
+71-->C:\Users\Torsten\Desktop\RawrRemote\android\app\src\main\AndroidManifest.xml:50:13-62
+72            android:authorities="com.rawr.ccapi.fileprovider"
+72-->C:\Users\Torsten\Desktop\RawrRemote\android\app\src\main\AndroidManifest.xml:51:13-64
+73            android:exported="false"
+73-->C:\Users\Torsten\Desktop\RawrRemote\android\app\src\main\AndroidManifest.xml:52:13-37
+74            android:grantUriPermissions="true" >
+74-->C:\Users\Torsten\Desktop\RawrRemote\android\app\src\main\AndroidManifest.xml:53:13-47
+75            <meta-data
+75-->C:\Users\Torsten\Desktop\RawrRemote\android\app\src\main\AndroidManifest.xml:54:13-56:54
+76                android:name="android.support.FILE_PROVIDER_PATHS"
+76-->C:\Users\Torsten\Desktop\RawrRemote\android\app\src\main\AndroidManifest.xml:55:17-67
+77                android:resource="@xml/file_paths" />
+77-->C:\Users\Torsten\Desktop\RawrRemote\android\app\src\main\AndroidManifest.xml:56:17-51
+78        </provider>
+79
+80        <activity
+80-->[androidx.compose.ui:ui-tooling-android:1.7.6] C:\Users\Torsten\.gradle\caches\8.11.1\transforms\0cdb037e5611f7fde256d06e2a8835e3\transformed\ui-tooling-release\AndroidManifest.xml:23:9-25:39
+81            android:name="androidx.compose.ui.tooling.PreviewActivity"
+81-->[androidx.compose.ui:ui-tooling-android:1.7.6] C:\Users\Torsten\.gradle\caches\8.11.1\transforms\0cdb037e5611f7fde256d06e2a8835e3\transformed\ui-tooling-release\AndroidManifest.xml:24:13-71
+82            android:exported="true" />
+82-->[androidx.compose.ui:ui-tooling-android:1.7.6] C:\Users\Torsten\.gradle\caches\8.11.1\transforms\0cdb037e5611f7fde256d06e2a8835e3\transformed\ui-tooling-release\AndroidManifest.xml:25:13-36
+83
+84        <provider
+84-->[androidx.emoji2:emoji2:1.3.0] C:\Users\Torsten\.gradle\caches\8.11.1\transforms\dbb6aba12e8f4688e96f051321cbac9d\transformed\emoji2-1.3.0\AndroidManifest.xml:24:9-32:20
+85            android:name="androidx.startup.InitializationProvider"
+85-->[androidx.emoji2:emoji2:1.3.0] C:\Users\Torsten\.gradle\caches\8.11.1\transforms\dbb6aba12e8f4688e96f051321cbac9d\transformed\emoji2-1.3.0\AndroidManifest.xml:25:13-67
+86            android:authorities="com.rawr.ccapi.androidx-startup"
+86-->[androidx.emoji2:emoji2:1.3.0] C:\Users\Torsten\.gradle\caches\8.11.1\transforms\dbb6aba12e8f4688e96f051321cbac9d\transformed\emoji2-1.3.0\AndroidManifest.xml:26:13-68
+87            android:exported="false" >
+87-->[androidx.emoji2:emoji2:1.3.0] C:\Users\Torsten\.gradle\caches\8.11.1\transforms\dbb6aba12e8f4688e96f051321cbac9d\transformed\emoji2-1.3.0\AndroidManifest.xml:27:13-37
+88            <meta-data
+88-->[androidx.emoji2:emoji2:1.3.0] C:\Users\Torsten\.gradle\caches\8.11.1\transforms\dbb6aba12e8f4688e96f051321cbac9d\transformed\emoji2-1.3.0\AndroidManifest.xml:29:13-31:52
+89                android:name="androidx.emoji2.text.EmojiCompatInitializer"
+89-->[androidx.emoji2:emoji2:1.3.0] C:\Users\Torsten\.gradle\caches\8.11.1\transforms\dbb6aba12e8f4688e96f051321cbac9d\transformed\emoji2-1.3.0\AndroidManifest.xml:30:17-75
+90                android:value="androidx.startup" />
+90-->[androidx.emoji2:emoji2:1.3.0] C:\Users\Torsten\.gradle\caches\8.11.1\transforms\dbb6aba12e8f4688e96f051321cbac9d\transformed\emoji2-1.3.0\AndroidManifest.xml:31:17-49
+91            <meta-data
+91-->[androidx.lifecycle:lifecycle-process:2.8.7] C:\Users\Torsten\.gradle\caches\8.11.1\transforms\fecdefc21d864bc98a5b7c28bd337d3b\transformed\lifecycle-process-2.8.7\AndroidManifest.xml:29:13-31:52
+92                android:name="androidx.lifecycle.ProcessLifecycleInitializer"
+92-->[androidx.lifecycle:lifecycle-process:2.8.7] C:\Users\Torsten\.gradle\caches\8.11.1\transforms\fecdefc21d864bc98a5b7c28bd337d3b\transformed\lifecycle-process-2.8.7\AndroidManifest.xml:30:17-78
+93                android:value="androidx.startup" />
+93-->[androidx.lifecycle:lifecycle-process:2.8.7] C:\Users\Torsten\.gradle\caches\8.11.1\transforms\fecdefc21d864bc98a5b7c28bd337d3b\transformed\lifecycle-process-2.8.7\AndroidManifest.xml:31:17-49
+94            <meta-data
+94-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\Torsten\.gradle\caches\8.11.1\transforms\9cb5359e4ff6f34dce519549fc4f2dfc\transformed\profileinstaller-1.3.1\AndroidManifest.xml:29:13-31:52
+95                android:name="androidx.profileinstaller.ProfileInstallerInitializer"
+95-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\Torsten\.gradle\caches\8.11.1\transforms\9cb5359e4ff6f34dce519549fc4f2dfc\transformed\profileinstaller-1.3.1\AndroidManifest.xml:30:17-85
+96                android:value="androidx.startup" />
+96-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\Torsten\.gradle\caches\8.11.1\transforms\9cb5359e4ff6f34dce519549fc4f2dfc\transformed\profileinstaller-1.3.1\AndroidManifest.xml:31:17-49
+97        </provider>
+98
+99        <receiver
+99-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\Torsten\.gradle\caches\8.11.1\transforms\9cb5359e4ff6f34dce519549fc4f2dfc\transformed\profileinstaller-1.3.1\AndroidManifest.xml:34:9-52:20
+100            android:name="androidx.profileinstaller.ProfileInstallReceiver"
+100-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\Torsten\.gradle\caches\8.11.1\transforms\9cb5359e4ff6f34dce519549fc4f2dfc\transformed\profileinstaller-1.3.1\AndroidManifest.xml:35:13-76
+101            android:directBootAware="false"
+101-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\Torsten\.gradle\caches\8.11.1\transforms\9cb5359e4ff6f34dce519549fc4f2dfc\transformed\profileinstaller-1.3.1\AndroidManifest.xml:36:13-44
+102            android:enabled="true"
+102-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\Torsten\.gradle\caches\8.11.1\transforms\9cb5359e4ff6f34dce519549fc4f2dfc\transformed\profileinstaller-1.3.1\AndroidManifest.xml:37:13-35
+103            android:exported="true"
+103-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\Torsten\.gradle\caches\8.11.1\transforms\9cb5359e4ff6f34dce519549fc4f2dfc\transformed\profileinstaller-1.3.1\AndroidManifest.xml:38:13-36
+104            android:permission="android.permission.DUMP" >
+104-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\Torsten\.gradle\caches\8.11.1\transforms\9cb5359e4ff6f34dce519549fc4f2dfc\transformed\profileinstaller-1.3.1\AndroidManifest.xml:39:13-57
+105            <intent-filter>
+105-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\Torsten\.gradle\caches\8.11.1\transforms\9cb5359e4ff6f34dce519549fc4f2dfc\transformed\profileinstaller-1.3.1\AndroidManifest.xml:40:13-42:29
+106                <action android:name="androidx.profileinstaller.action.INSTALL_PROFILE" />
+106-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\Torsten\.gradle\caches\8.11.1\transforms\9cb5359e4ff6f34dce519549fc4f2dfc\transformed\profileinstaller-1.3.1\AndroidManifest.xml:41:17-91
+106-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\Torsten\.gradle\caches\8.11.1\transforms\9cb5359e4ff6f34dce519549fc4f2dfc\transformed\profileinstaller-1.3.1\AndroidManifest.xml:41:25-88
+107            </intent-filter>
+108            <intent-filter>
+108-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\Torsten\.gradle\caches\8.11.1\transforms\9cb5359e4ff6f34dce519549fc4f2dfc\transformed\profileinstaller-1.3.1\AndroidManifest.xml:43:13-45:29
+109                <action android:name="androidx.profileinstaller.action.SKIP_FILE" />
+109-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\Torsten\.gradle\caches\8.11.1\transforms\9cb5359e4ff6f34dce519549fc4f2dfc\transformed\profileinstaller-1.3.1\AndroidManifest.xml:44:17-85
+109-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\Torsten\.gradle\caches\8.11.1\transforms\9cb5359e4ff6f34dce519549fc4f2dfc\transformed\profileinstaller-1.3.1\AndroidManifest.xml:44:25-82
+110            </intent-filter>
+111            <intent-filter>
+111-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\Torsten\.gradle\caches\8.11.1\transforms\9cb5359e4ff6f34dce519549fc4f2dfc\transformed\profileinstaller-1.3.1\AndroidManifest.xml:46:13-48:29
+112                <action android:name="androidx.profileinstaller.action.SAVE_PROFILE" />
+112-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\Torsten\.gradle\caches\8.11.1\transforms\9cb5359e4ff6f34dce519549fc4f2dfc\transformed\profileinstaller-1.3.1\AndroidManifest.xml:47:17-88
+112-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\Torsten\.gradle\caches\8.11.1\transforms\9cb5359e4ff6f34dce519549fc4f2dfc\transformed\profileinstaller-1.3.1\AndroidManifest.xml:47:25-85
+113            </intent-filter>
+114            <intent-filter>
+114-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\Torsten\.gradle\caches\8.11.1\transforms\9cb5359e4ff6f34dce519549fc4f2dfc\transformed\profileinstaller-1.3.1\AndroidManifest.xml:49:13-51:29
+115                <action android:name="androidx.profileinstaller.action.BENCHMARK_OPERATION" />
+115-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\Torsten\.gradle\caches\8.11.1\transforms\9cb5359e4ff6f34dce519549fc4f2dfc\transformed\profileinstaller-1.3.1\AndroidManifest.xml:50:17-95
+115-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\Torsten\.gradle\caches\8.11.1\transforms\9cb5359e4ff6f34dce519549fc4f2dfc\transformed\profileinstaller-1.3.1\AndroidManifest.xml:50:25-92
+116            </intent-filter>
+117        </receiver>
+118    </application>
+119
+120</manifest>
