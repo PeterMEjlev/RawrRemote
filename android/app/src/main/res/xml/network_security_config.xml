@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  CCAPI is served over plain HTTP, which Android blocks by default (API 28+).
+  The camera's IP is entered at runtime and lives on a private network, so we
+  permit cleartext globally here. If you want to lock this down, replace the
+  base-config with <domain-config> entries listing your camera's IP(s).
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="true" />
+</network-security-config>

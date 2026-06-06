@@ -1,0 +1,42 @@
+[
+    {
+        "merged": "com.rawr.ccapi.app-debug-47:/drawable-nodpi_af_zone.png.flat",
+        "source": "com.rawr.ccapi.app-main-49:/drawable-nodpi/af_zone.png"
+    },
+    {
+        "merged": "com.rawr.ccapi.app-debug-47:/drawable-nodpi_af_1point.png.flat",
+        "source": "com.rawr.ccapi.app-main-49:/drawable-nodpi/af_1point.png"
+    },
+    {
+        "merged": "com.rawr.ccapi.app-debug-47:/drawable-nodpi_af_spot.png.flat",
+        "source": "com.rawr.ccapi.app-main-49:/drawable-nodpi/af_spot.png"
+    },
+    {
+        "merged": "com.rawr.ccapi.app-debug-47:/drawable-nodpi_af_expand_around.png.flat",
+        "source": "com.rawr.ccapi.app-main-49:/drawable-nodpi/af_expand_around.png"
+    },
+    {
+        "merged": "com.rawr.ccapi.app-debug-47:/drawable-nodpi_af_tracking.png.flat",
+        "source": "com.rawr.ccapi.app-main-49:/drawable-nodpi/af_tracking.png"
+    },
+    {
+        "merged": "C:\\Users\\Torsten\\.gradle\\daemon\\8.11.1\\com.rawr.ccapi.app-debug-47:\\xml_file_paths.xml.flat",
+        "source": "C:\\Users\\Torsten\\.gradle\\daemon\\8.11.1\\com.rawr.ccapi.app-main-49:\\xml\\file_paths.xml"
+    },
+    {
+        "merged": "C:\\Users\\Torsten\\.gradle\\daemon\\8.11.1\\com.rawr.ccapi.app-debug-47:\\xml_network_security_config.xml.flat",
+        "source": "C:\\Users\\Torsten\\.gradle\\daemon\\8.11.1\\com.rawr.ccapi.app-main-49:\\xml\\network_security_config.xml"
+    },
+    {
+        "merged": "com.rawr.ccapi.app-debug-47:/drawable-nodpi_af_expand.png.flat",
+        "source": "com.rawr.ccapi.app-main-49:/drawable-nodpi/af_expand.png"
+    },
+    {
+        "merged": "com.rawr.ccapi.app-debug-47:/drawable-nodpi_af_large_zone.png.flat",
+        "source": "com.rawr.ccapi.app-main-49:/drawable-nodpi/af_large_zone.png"
+    },
+    {
+        "merged": "com.rawr.ccapi.app-debug-47:/drawable-nodpi_af_large_zone_vertical.png.flat",
+        "source": "com.rawr.ccapi.app-main-49:/drawable-nodpi/af_large_zone_vertical.png"
+    }
+]

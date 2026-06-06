@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- FileProvider roots. "." under external-path covers all of shared storage so
+     any scanned .CR3 (anywhere on the card) can be shared as a content:// URI. -->
+<paths>
+    <external-path name="external_files" path="." />
+</paths>
