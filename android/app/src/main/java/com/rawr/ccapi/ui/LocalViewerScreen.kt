@@ -74,6 +74,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.vector.path
@@ -371,6 +372,9 @@ private fun LocalPhotoCell(
     onOpen: () -> Unit,
     onShare: () -> Unit,
 ) {
+    // Match the Download page selection badge: 2 columns = full size, smaller
+    // thumbnails shrink the overlay control down to half size.
+    val badgeScale = (2f / columns).coerceIn(0.5f, 1f)
     Card(
         modifier = Modifier.clickable(onClick = onOpen),
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
@@ -382,7 +386,13 @@ private fun LocalPhotoCell(
                 // Quick share without opening the full preview.
                 IconButton(
                     onClick = onShare,
-                    modifier = Modifier.align(Alignment.TopEnd).padding(4.dp)
+                    modifier = Modifier.align(Alignment.TopEnd)
+                        .graphicsLayer {
+                            scaleX = badgeScale
+                            scaleY = badgeScale
+                            transformOrigin = TransformOrigin(1f, 0f)
+                        }
+                        .padding(4.dp)
                         .clip(CircleShape).background(Color.Black.copy(alpha = 0.4f)),
                 ) {
                     Icon(ShareIcon, contentDescription = "Share", tint = Color.White)
