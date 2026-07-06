@@ -2,6 +2,7 @@ package com.rawr.ccapi.ui
 
 import android.app.Application
 import android.net.Uri
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
@@ -80,8 +81,25 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     // -- selection (keyed by download url, persists across pages/folders) --
     val selected: SnapshotStateMap<String, FileTask> = mutableStateMapOf()
 
-    // -- full-screen preview (null = closed) --
+    // -- full-screen preview (null = closed) --------------------------------
     var previewFile by mutableStateOf<RawFile?>(null)
+        private set
+
+    // The pager's list is frozen when the preview opens: it pages through what
+    // the grid showed at tap time. A live list would shift every page when the
+    // "selected only" filter is active and the user deselects the current photo.
+    var previewList by mutableStateOf<List<RawFile>>(emptyList())
+        private set
+
+    fun openPreview(file: RawFile) {
+        previewList = visibleFiles
+        previewFile = file
+    }
+
+    fun closePreview() {
+        previewFile = null
+        previewList = emptyList()
+    }
 
     // -- grid density (pinch-to-zoom changes the column count) -------------
     var gridColumns by mutableStateOf(2)
@@ -121,21 +139,23 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     fun setSort(key: SortKey) { sortKey = key }
     fun toggleSortDirection() { sortAscending = !sortAscending }
 
-    /** Files visible after applying the active filters, then the active sort. */
-    val visibleFiles: List<RawFile>
-        get() {
-            val filtered = files.filter { f ->
-                (ratingFilter.isEmpty() || (f.rating ?: 0) in ratingFilter) &&
-                    (!selectedOnly || selected.containsKey(f.url))
-            }
-            val comparator: Comparator<RawFile> = when (sortKey) {
-                SortKey.NAME -> compareBy { it.name.lowercase() }
-                SortKey.DATE -> compareBy { parseModified(it.modified) }
-                SortKey.SIZE -> compareBy { it.size ?: -1L }
-            }
-            val sorted = filtered.sortedWith(comparator)
-            return if (sortAscending) sorted else sorted.reversed()
+    /**
+     * Files visible after applying the active filters, then the active sort.
+     * derivedStateOf caches the result: the filter + sort only re-run when one
+     * of the inputs changes, not on every composition that reads the list.
+     */
+    val visibleFiles: List<RawFile> by derivedStateOf {
+        val filtered = files.filter { f ->
+            (ratingFilter.isEmpty() || (f.rating ?: 0) in ratingFilter) &&
+                (!selectedOnly || selected.containsKey(f.url))
         }
+        val comparator: Comparator<RawFile> = when (sortKey) {
+            SortKey.NAME -> compareBy { it.name.lowercase() }
+            SortKey.DATE -> compareBy { parseModified(it.modified) }
+            SortKey.SIZE -> compareBy { it.size ?: -1L }
+        }
+        filtered.sortedWith(if (sortAscending) comparator else comparator.reversed())
+    }
 
     /** Parse CCAPI's RFC-1123 lastmodifieddate to epoch seconds; unknown sorts first. */
     private fun parseModified(s: String?): Long {

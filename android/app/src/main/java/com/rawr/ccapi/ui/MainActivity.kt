@@ -229,7 +229,9 @@ private fun MainShell(vm: MainViewModel, controlVm: ControlViewModel, localVm: L
         // nav, as overlays inside the activity's edge-to-edge window — so they
         // fill the whole screen and their bottom button never clips off the edge.
         vm.previewFile?.let { file ->
-            val files = vm.visibleFiles
+            // previewList is frozen at open time (see MainViewModel.openPreview)
+            // so pages don't shift while swiping.
+            val files = vm.previewList
             val startIndex = files.indexOfFirst { it.url == file.url }
             PreviewOverlay(vm, if (startIndex >= 0) files else listOf(file), startIndex.coerceAtLeast(0))
         }
@@ -574,7 +576,7 @@ private fun PhotoCell(vm: MainViewModel, f: RawFile, cellWidthPx: Int) {
     // 2 columns = full size; never smaller than half.
     val badgeScale = (2f / vm.gridColumns).coerceIn(0.5f, 1f)
     Card(
-        modifier = Modifier.clickable { vm.previewFile = f },
+        modifier = Modifier.clickable { vm.openPreview(f) },
         border = border,
         shape = RoundedCornerShape(10.dp),
     ) {
@@ -798,121 +800,9 @@ private fun FilterSheet(vm: MainViewModel, onDismiss: () -> Unit) {
 // --- full-screen preview ---------------------------------------------------
 
 @Composable
-private fun PreviewOverlay(vm: MainViewModel, f: RawFile) {
-    val checked = vm.selected.containsKey(f.url)
-    // Rendered as a full-screen overlay inside the activity's own edge-to-edge,
-    // immersive window — NOT a Dialog. A Dialog gets a separate window sized to
-    // wrap/centre its content, which left the photo vertically offset and clipped
-    // the bottom button off-screen. Dismiss on system back, like a dialog would.
-    BackHandler { vm.previewFile = null }
-
-    // Pinch-to-zoom + pan, and swipe-down-to-dismiss; reset per photo.
-    var scale by remember(f.path) { mutableStateOf(1f) }
-    var offset by remember(f.path) { mutableStateOf(Offset.Zero) }
-    var dismissDrag by remember(f.path) { mutableStateOf(0f) }
-    var boxSize by remember { mutableStateOf(IntSize.Zero) }
-
-    // Fade the backdrop as the photo is dragged down toward dismissal.
-    val backdropAlpha = (1f - (dismissDrag / 900f)).coerceIn(0.4f, 1f)
-
-    Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = backdropAlpha))) {
-        Box(
-            Modifier.fillMaxSize()
-                .onSizeChanged { boxSize = it }
-                .pointerInput(f.path) {
-                    val dismissThreshold = 140.dp.toPx()
-                    val slop = viewConfiguration.touchSlop
-                    awaitEachGesture {
-                        awaitFirstDown(requireUnconsumed = false)
-                        var zoomed = false
-                        var armed = false
-                        var totalDy = 0f
-                        do {
-                            val event = awaitPointerEvent()
-                            val zoom = event.calculateZoom()
-                            val pan = event.calculatePan()
-                            if (event.changes.size >= 2 || scale > 1f) {
-                                // Zoom / pan an already-zoomed (or pinching) image.
-                                zoomed = true
-                                val newScale = (scale * zoom).coerceIn(1f, 5f)
-                                val maxX = (boxSize.width * (newScale - 1f)) / 2f
-                                val maxY = (boxSize.height * (newScale - 1f)) / 2f
-                                offset = if (newScale > 1f) {
-                                    Offset(
-                                        (offset.x + pan.x).coerceIn(-maxX, maxX),
-                                        (offset.y + pan.y).coerceIn(-maxY, maxY),
-                                    )
-                                } else {
-                                    Offset.Zero
-                                }
-                                scale = newScale
-                                event.changes.forEach { it.consume() }
-                            } else {
-                                // Not zoomed: track a downward drag to dismiss.
-                                // The touch-slop guard leaves taps/double-taps alone.
-                                totalDy += pan.y
-                                if (!armed && totalDy > slop) armed = true
-                                if (armed) {
-                                    dismissDrag = (totalDy - slop).coerceAtLeast(0f)
-                                    event.changes.forEach { it.consume() }
-                                }
-                            }
-                        } while (event.changes.any { it.pressed })
-
-                        // Gesture ended: close if dragged far enough, else snap back.
-                        if (!zoomed && armed && dismissDrag > dismissThreshold) {
-                            vm.previewFile = null
-                        } else {
-                            dismissDrag = 0f
-                        }
-                    }
-                }
-                .pointerInput(f.path) {
-                    detectTapGestures(onDoubleTap = {
-                        if (scale > 1f) { scale = 1f; offset = Offset.Zero } else { scale = 2.5f }
-                    })
-                },
-            contentAlignment = Alignment.Center,
-        ) {
-            FullImage(
-                f.path,
-                modifier = Modifier.fillMaxSize().graphicsLayer {
-                    scaleX = scale
-                    scaleY = scale
-                    translationX = offset.x
-                    translationY = offset.y + dismissDrag
-                },
-            )
-        }
-
-        Row(
-            Modifier.fillMaxWidth().align(Alignment.TopCenter)
-                .background(Color.Black.copy(alpha = 0.5f))
-                // Keep the title/close clear of the status bar / display cutout.
-                .statusBarsPadding().padding(12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Text(f.name, color = Color.White, modifier = Modifier.weight(1f), maxLines = 1,
-                overflow = TextOverflow.Ellipsis, style = MaterialTheme.typography.titleMedium)
-            TextButton(onClick = { vm.previewFile = null }) { Text("Close") }
-        }
-
-        Button(
-            onClick = { vm.toggle(f) },
-            // navigationBarsPadding tracks the bar if it transiently reappears;
-            // the base padding keeps the button clear of the screen edge.
-            modifier = Modifier.align(Alignment.BottomCenter)
-                .navigationBarsPadding().padding(horizontal = 24.dp, vertical = 28.dp),
-        ) {
-            Text(if (checked) "✓ Selected — tap to deselect" else "Select for download")
-        }
-    }
-}
-
-@Composable
 private fun PreviewOverlay(vm: MainViewModel, files: List<RawFile>, startIndex: Int) {
     if (files.isEmpty()) return
-    BackHandler { vm.previewFile = null }
+    BackHandler { vm.closePreview() }
 
     val pagerState = rememberPagerState(initialPage = startIndex.coerceIn(0, files.lastIndex)) { files.size }
     val current = files.getOrNull(pagerState.currentPage) ?: files.first()
@@ -924,7 +814,7 @@ private fun PreviewOverlay(vm: MainViewModel, files: List<RawFile>, startIndex: 
             modifier = Modifier.fillMaxSize(),
             beyondViewportPageCount = 1,
         ) { page ->
-            ZoomableImportPhotoPage(file = files[page], onDismiss = { vm.previewFile = null })
+            ZoomableImportPhotoPage(file = files[page], onDismiss = { vm.closePreview() })
         }
 
         Row(
@@ -947,7 +837,7 @@ private fun PreviewOverlay(vm: MainViewModel, files: List<RawFile>, startIndex: 
                     style = MaterialTheme.typography.labelSmall,
                 )
             }
-            TextButton(onClick = { vm.previewFile = null }) { Text("Close") }
+            TextButton(onClick = { vm.closePreview() }) { Text("Close") }
         }
 
         Button(
@@ -955,7 +845,7 @@ private fun PreviewOverlay(vm: MainViewModel, files: List<RawFile>, startIndex: 
             modifier = Modifier.align(Alignment.BottomCenter)
                 .navigationBarsPadding().padding(horizontal = 24.dp, vertical = 28.dp),
         ) {
-            Text(if (checked) "âœ“ Selected â€” tap to deselect" else "Select for download")
+            Text(if (checked) "Selected — tap to deselect" else "Select for download")
         }
     }
 }

@@ -1,6 +1,7 @@
 package com.rawr.ccapi.ui
 
 import android.app.Application
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
@@ -76,18 +77,20 @@ class LocalViewerViewModel(app: Application) : AndroidViewModel(app) {
 
     val total: Int get() = photos.size
 
-    /** Files after the active rating filter, then the active sort. */
-    val visiblePhotos: List<LocalRawPhoto>
-        get() {
-            val filtered = photos.filter { ratingFilter.isEmpty() || it.rating in ratingFilter }
-            val comparator: Comparator<LocalRawPhoto> = when (sortKey) {
-                SortKey.NAME -> compareBy { it.name.lowercase() }
-                SortKey.DATE -> compareBy { it.captureTime ?: it.lastModified }
-                SortKey.SIZE -> compareBy { it.size }
-            }
-            val sorted = filtered.sortedWith(comparator)
-            return if (sortAscending) sorted else sorted.reversed()
+    /**
+     * Files after the active rating filter, then the active sort. Cached via
+     * derivedStateOf so the filter + sort only re-run when an input changes,
+     * not on every composition that reads the list.
+     */
+    val visiblePhotos: List<LocalRawPhoto> by derivedStateOf {
+        val filtered = photos.filter { ratingFilter.isEmpty() || it.rating in ratingFilter }
+        val comparator: Comparator<LocalRawPhoto> = when (sortKey) {
+            SortKey.NAME -> compareBy { it.name.lowercase() }
+            SortKey.DATE -> compareBy { it.captureTime ?: it.lastModified }
+            SortKey.SIZE -> compareBy { it.size }
         }
+        filtered.sortedWith(if (sortAscending) comparator else comparator.reversed())
+    }
 
     /**
      * Re-check the permission (e.g. after returning from the Settings screen)

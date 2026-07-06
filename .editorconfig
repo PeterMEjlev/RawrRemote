@@ -1,0 +1,7 @@
+# Keep every editor writing UTF-8 — a Windows-1252 round-trip once corrupted
+# UI strings in MainActivity.kt (see TODO.md item 2).
+root = true
+
+[*]
+charset = utf-8
+insert_final_newline = true

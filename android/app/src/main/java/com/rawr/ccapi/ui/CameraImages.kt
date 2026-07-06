@@ -2,9 +2,10 @@ package com.rawr.ccapi.ui
 
 import android.util.LruCache
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.size
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.produceState
@@ -12,7 +13,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.unit.dp
 import com.rawr.ccapi.CameraSession
 import com.rawr.ccapi.net.CcapiEndpoints
 import kotlinx.coroutines.Dispatchers
@@ -54,6 +54,13 @@ object CameraImageLoader {
     private val thumbLimiter = Semaphore(4)
     private val sharpLimiter = Semaphore(2)
 
+    // Bounds concurrent bitmap decodes. The network lanes indirectly bound
+    // decodes on first load, but on the cache-hit path (scrolling back, or a
+    // pinch that changed the request width so bitmap caches miss while the raw
+    // bytes hit) every visible cell would otherwise decode at once, saturating
+    // the CPU and starving the UI thread mid-scroll.
+    private val decodeLimiter = Semaphore(2)
+
     private suspend fun fetchBytes(path: String, kind: String): ByteArray? {
         val key = "$kind:$path"
         rawCache.get(key)?.let { return it }
@@ -81,8 +88,10 @@ object CameraImageLoader {
     suspend fun loadThumb(path: String): ImageBitmap? {
         thumbCache.get(path)?.let { return it }
         val bytes = fetchBytes(path, CcapiEndpoints.KIND_THUMBNAIL) ?: return null
-        return withContext(Dispatchers.Default) {
-            decode(bytes, reqWidth = 320)?.also { thumbCache.put(path, it) }
+        return decodeLimiter.withPermit {
+            withContext(Dispatchers.Default) {
+                decode(bytes, reqWidth = 320)?.also { thumbCache.put(path, it) }
+            }
         }
     }
 
@@ -95,15 +104,19 @@ object CameraImageLoader {
         val key = "$reqWidth:$path"
         gridCache.get(key)?.let { return it }
         val bytes = fetchBytes(path, CcapiEndpoints.KIND_DISPLAY) ?: return null
-        return withContext(Dispatchers.Default) {
-            decode(bytes, reqWidth)?.also { gridCache.put(key, it) }
+        return decodeLimiter.withPermit {
+            withContext(Dispatchers.Default) {
+                decode(bytes, reqWidth)?.also { gridCache.put(key, it) }
+            }
         }
     }
 
     /** Larger bitmap for the full-screen view; reuses the cached display bytes. */
     suspend fun loadFull(path: String): ImageBitmap? {
         val bytes = fetchBytes(path, CcapiEndpoints.KIND_DISPLAY) ?: return null
-        return withContext(Dispatchers.Default) { decode(bytes, reqWidth = 1600) }
+        return decodeLimiter.withPermit {
+            withContext(Dispatchers.Default) { decode(bytes, reqWidth = 1600) }
+        }
     }
 
     // Decode camera-preview JPEG bytes; shared with the local viewer, including
@@ -112,13 +125,22 @@ object CameraImageLoader {
         decodeSampledImage(bytes, reqWidth)
 }
 
+// Decode-width buckets for the sharp grid image. Quantizing the requested width
+// keeps a pinch or rotation that nudges the cell size from changing every
+// visible cell's produceState key (and gridCache key) at once — which would
+// restart them all and trigger a simultaneous re-fetch/re-decode storm.
+private val WIDTH_BUCKETS = intArrayOf(192, 256, 320, 448, 640, 896, 1024)
+
+private fun quantizeCellWidth(px: Int): Int =
+    WIDTH_BUCKETS.firstOrNull { it >= px } ?: WIDTH_BUCKETS.last()
+
 @Composable
 fun GridThumb(path: String, cellWidthPx: Int, modifier: Modifier = Modifier) {
-    // Decode the sharp image to the cell's real on-screen pixel width, so we never
-    // decode (or upload to the GPU) a bitmap bigger than the cell actually draws.
-    // This is what keeps scrolling smooth as columns grow: more columns = smaller
-    // cells = smaller bitmaps, rather than the old fixed, oversized buckets.
-    val sharpWidth = cellWidthPx.coerceIn(160, 1024)
+    // Decode the sharp image to (the bucket just above) the cell's on-screen
+    // pixel width, so we never decode or upload a bitmap much bigger than the
+    // cell draws: more columns = smaller cells = smaller bitmaps = less GPU
+    // work per frame, while nearby column counts share one cached decode.
+    val sharpWidth = quantizeCellWidth(cellWidthPx)
     val image by produceState<ImageBitmap?>(initialValue = null, key1 = path, key2 = sharpWidth) {
         // If the sharp image is already cached, use it straight away; otherwise
         // show the fast embedded thumbnail first, then upgrade to the sharp one.
@@ -140,9 +162,11 @@ fun GridThumb(path: String, cellWidthPx: Int, modifier: Modifier = Modifier) {
     if (img != null) {
         Image(bitmap = img, contentDescription = null, contentScale = ContentScale.Crop, modifier = modifier)
     } else {
-        Box(modifier, contentAlignment = Alignment.Center) {
-            CircularProgressIndicator(strokeWidth = 2.dp, modifier = Modifier.size(22.dp))
-        }
+        // Static placeholder, deliberately NOT a spinner: with several columns,
+        // dozens of cells load at once and an indeterminate spinner per cell
+        // means dozens of infinite animations invalidating every frame — a
+        // major source of scroll jank at higher grid densities.
+        Box(modifier.background(MaterialTheme.colorScheme.surfaceVariant))
     }
 }
 

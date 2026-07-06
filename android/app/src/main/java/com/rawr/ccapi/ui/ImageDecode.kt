@@ -58,7 +58,11 @@ internal fun decodeSampledImageWithSize(
         bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.size, opts)
     }
     val decoded = bitmap ?: return null
-    val oriented = if (isUpright) decoded else applyOrientation(decoded, orientation)
+    // Rotated frames must decode as software bitmaps (the orientation Matrix
+    // can't operate on HARDWARE), but once rotated they can be copied into a
+    // HARDWARE bitmap so portrait shots also skip the per-draw texture upload
+    // and keep their pixels off the Java heap while scrolling.
+    val oriented = if (isUpright) decoded else applyOrientation(decoded, orientation).toHardwareIfPossible()
     val (width, height) = orientedSourceSize(bounds.outWidth, bounds.outHeight, orientation)
         ?: (oriented.width to oriented.height)
     return DecodedImage(oriented.asImageBitmap(), width, height)
@@ -91,6 +95,14 @@ private fun applyOrientation(bitmap: Bitmap, orientation: Int): Bitmap {
     } catch (e: Exception) {
         bitmap
     }
+}
+
+/** Copy into a GPU-resident HARDWARE bitmap, recycling the software source.
+ *  Falls back to the original bitmap if the copy is rejected. */
+private fun Bitmap.toHardwareIfPossible(): Bitmap = try {
+    copy(Bitmap.Config.HARDWARE, false)?.also { if (it !== this) recycle() } ?: this
+} catch (e: Exception) {
+    this
 }
 
 private fun orientedSourceSize(width: Int, height: Int, orientation: Int): Pair<Int, Int>? {

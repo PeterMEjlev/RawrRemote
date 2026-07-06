@@ -7,6 +7,12 @@ import com.burgstaller.okhttp.basic.BasicAuthenticator
 import com.burgstaller.okhttp.digest.CachingAuthenticator
 import com.burgstaller.okhttp.digest.Credentials
 import com.burgstaller.okhttp.digest.DigestAuthenticator
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
@@ -47,6 +53,9 @@ class UnsupportedEndpointException(message: String) : CcapiException(message)
 class CcapiHttpException(val statusCode: Int, message: String) : CcapiException(message)
 class DownloadCancelledException : CcapiException("Download cancelled")
 class PartialDownloadException(message: String) : CcapiException(message)
+
+/** Concurrent `?kind=info` requests per page listing (see [CcapiClient.listRawFiles]). */
+private const val INFO_CONCURRENCY = 4
 
 // --- Models --------------------------------------------------------------
 
@@ -313,8 +322,15 @@ class CcapiClient(
     fun getFileInfo(filePathOrUrl: String): JsonObject =
         getJson(filePathOrUrl, mapOf(CcapiEndpoints.PARAM_KIND to CcapiEndpoints.KIND_INFO))
 
-    /** One page of RAW files in a directory (lazy: only the requested page). */
-    fun listRawFiles(
+    /**
+     * One page of RAW files in a directory (lazy: only the requested page).
+     *
+     * Per-file `?kind=info` metadata is fetched concurrently on a bounded lane:
+     * fetched serially, a full 100-item CCAPI page at ~40–80 ms per request
+     * blocked for several seconds before anything rendered. Four in flight
+     * matches what the camera already serves for the thumbnail loader.
+     */
+    suspend fun listRawFiles(
         folder: String,
         page: Int = 1,
         extensions: List<String> = CcapiEndpoints.RAW_EXTENSIONS,
@@ -335,17 +351,24 @@ class CcapiClient(
                 RawFile(name = p.substringAfterLast('/'), path = p, url = buildUrl(p).toString(), folder = label)
             }
 
-        val enriched = if (withInfo) files.map { f ->
-            try {
-                val info = getFileInfo(f.path)
-                f.copy(
-                    size = info["filesize"]?.jsonPrimitive?.contentOrNull?.toLongOrNull(),
-                    modified = info["lastmodifieddate"]?.jsonPrimitive?.contentOrNull,
-                    rating = parseRating(info),
-                )
-            } catch (e: CcapiException) {
-                f // metadata is best-effort; never fail the whole listing
-            }
+        val enriched = if (withInfo) coroutineScope {
+            val limiter = Semaphore(INFO_CONCURRENCY)
+            files.map { f ->
+                async(Dispatchers.IO) {
+                    limiter.withPermit {
+                        try {
+                            val info = getFileInfo(f.path)
+                            f.copy(
+                                size = info["filesize"]?.jsonPrimitive?.contentOrNull?.toLongOrNull(),
+                                modified = info["lastmodifieddate"]?.jsonPrimitive?.contentOrNull,
+                                rating = parseRating(info),
+                            )
+                        } catch (e: CcapiException) {
+                            f // metadata is best-effort; never fail the whole listing
+                        }
+                    }
+                }
+            }.awaitAll()
         } else files
 
         return FolderPage(enriched, safePage, pageCount, total)
