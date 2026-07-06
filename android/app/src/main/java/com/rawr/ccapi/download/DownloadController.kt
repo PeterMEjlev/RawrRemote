@@ -7,6 +7,7 @@ import androidx.core.content.ContextCompat
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import java.util.concurrent.atomic.AtomicBoolean
 
 /**
@@ -52,15 +53,16 @@ object DownloadController {
     // -- internal: called by the service ----------------------------------
 
     internal fun updateFile(index: Int, transform: (FileProgress) -> FileProgress) {
-        val current = _state.value
-        if (index !in current.files.indices) return
-        val updated = current.files.toMutableList()
-        updated[index] = transform(updated[index])
-        _state.value = current.copy(files = updated)
+        // update {} is atomic (compare-and-set), so concurrent progress pushes
+        // can't overwrite each other the way a get-copy-set could.
+        _state.update { current ->
+            if (index !in current.files.indices) return@update current
+            current.copy(files = current.files.toMutableList().also { it[index] = transform(it[index]) })
+        }
     }
 
     internal fun finish(status: JobStatus) {
-        _state.value = _state.value.copy(status = status)
+        _state.update { it.copy(status = status) }
         pending = null
     }
 }

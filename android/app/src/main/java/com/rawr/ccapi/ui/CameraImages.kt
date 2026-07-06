@@ -7,8 +7,12 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.ImageBitmap
@@ -46,6 +50,20 @@ object CameraImageLoader {
     private val gridCache = object : LruCache<String, ImageBitmap>(48 * 1024 * 1024) {
         override fun sizeOf(key: String, value: ImageBitmap): Int = value.width * value.height * 4
     }
+    // Decoded full-screen previews, keyed by "reqWidth:path". The pager
+    // preloads neighbours, so without this every swipe re-decoded a frame that
+    // was just on screen. Sized to hold one zoomed decode (which can reach
+    // ~45 MB) alongside a few fit-to-screen frames.
+    private val fullCache = object : LruCache<String, ImageBitmap>(80 * 1024 * 1024) {
+        override fun sizeOf(key: String, value: ImageBitmap): Int = value.width * value.height * 4
+    }
+
+    // Fit-to-screen and zoomed-in decode widths for the full-screen preview.
+    // The decoder's power-of-two sampling yields a result in [reqWidth,
+    // 2*reqWidth), so 3072 turns an 8192 px embedded preview into a 4096 px
+    // decode — sharp at 2-5x zoom, and still within common GPU texture limits.
+    private const val FULL_WIDTH = 1600
+    private const val ZOOM_WIDTH = 3072
 
     // Two separate lanes so the small, fast thumbnails are NEVER stuck waiting
     // behind the big, slow display downloads. The visible cells' thumbnails get
@@ -111,11 +129,24 @@ object CameraImageLoader {
         }
     }
 
-    /** Larger bitmap for the full-screen view; reuses the cached display bytes. */
-    suspend fun loadFull(path: String): ImageBitmap? {
+    /** Sharpest already-decoded full-screen frame, if cached (zoomed preferred). */
+    fun cachedFull(path: String): ImageBitmap? =
+        fullCache.get("$ZOOM_WIDTH:$path") ?: fullCache.get("$FULL_WIDTH:$path")
+
+    /** Fit-to-screen bitmap for the full-screen view; reuses the cached display bytes. */
+    suspend fun loadFull(path: String): ImageBitmap? = loadFullAt(path, FULL_WIDTH)
+
+    /** Higher-resolution decode of the same display bytes for a zoomed-in view. */
+    suspend fun loadZoomed(path: String): ImageBitmap? = loadFullAt(path, ZOOM_WIDTH)
+
+    private suspend fun loadFullAt(path: String, reqWidth: Int): ImageBitmap? {
+        val key = "$reqWidth:$path"
+        fullCache.get(key)?.let { return it }
         val bytes = fetchBytes(path, CcapiEndpoints.KIND_DISPLAY) ?: return null
         return decodeLimiter.withPermit {
-            withContext(Dispatchers.Default) { decode(bytes, reqWidth = 1600) }
+            withContext(Dispatchers.Default) {
+                decode(bytes, reqWidth)?.also { fullCache.put(key, it) }
+            }
         }
     }
 
@@ -171,9 +202,17 @@ fun GridThumb(path: String, cellWidthPx: Int, modifier: Modifier = Modifier) {
 }
 
 @Composable
-fun FullImage(path: String, modifier: Modifier = Modifier) {
-    val image by produceState<ImageBitmap?>(initialValue = null, key1 = path) {
-        value = CameraImageLoader.loadFull(path)
+fun FullImage(path: String, zoomed: Boolean = false, modifier: Modifier = Modifier) {
+    // Start from the sharpest cached frame so revisits render instantly.
+    var image by remember(path) { mutableStateOf(CameraImageLoader.cachedFull(path)) }
+    LaunchedEffect(path) {
+        if (image == null) image = CameraImageLoader.loadFull(path)
+    }
+    // Once zoomed in, quietly swap in a decode at roughly double the resolution
+    // — the fit-to-screen decode looks soft at 2-5x. The sharp frame is kept
+    // after zooming back out (it draws fine at 1x and stays cached).
+    LaunchedEffect(path, zoomed) {
+        if (zoomed) CameraImageLoader.loadZoomed(path)?.let { image = it }
     }
     val img = image
     if (img != null) {

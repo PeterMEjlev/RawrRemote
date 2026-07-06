@@ -12,6 +12,9 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- Hold Wi-Fi at full performance (and the CPU awake) during a download
+         batch, so screen-off power saving doesn't throttle transfers. -->
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
 
     <!-- Local RAW viewer: find .CR3 files anywhere on the phone. The OS gallery
          can't index CR3, so a full-storage scan is the only reliable way to list

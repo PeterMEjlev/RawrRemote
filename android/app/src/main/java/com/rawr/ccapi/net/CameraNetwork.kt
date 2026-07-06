@@ -39,6 +39,15 @@ object CameraNetwork {
         private set
 
     /**
+     * Invoked (from a ConnectivityManager binder thread) when the acquired
+     * camera network disappears. Without this the process would stay bound to
+     * a dead network — black-holing every request, including reconnects —
+     * while the UI still claimed to be connected.
+     */
+    @Volatile
+    var onCameraNetworkLost: (() -> Unit)? = null
+
+    /**
      * Acquire and bind to a Wi-Fi network that need not have internet access.
      * Returns true once acquired, false if none appeared within [timeoutMs].
      * The phone must already be connected to the camera's Wi-Fi.
@@ -78,6 +87,14 @@ object CameraNetwork {
                     if (resumed) return
                     resumed = true
                     if (cont.isActive) cont.resume(false)
+                }
+
+                override fun onLost(network: Network) {
+                    if (network != boundNetwork) return
+                    cm.bindProcessToNetwork(null)
+                    boundNetwork = null
+                    isBound = false
+                    onCameraNetworkLost?.invoke()
                 }
             }
             callback = cb

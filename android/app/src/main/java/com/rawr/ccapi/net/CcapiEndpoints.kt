@@ -49,7 +49,9 @@ object CcapiEndpoints {
 
     const val TYPE_ALL = "all"
 
-    val RAW_EXTENSIONS = listOf(".cr3")
+    // .CR3 for current bodies (R5), .CR2 for older ones — the View tab already
+    // handles both, so the import filter should too.
+    val RAW_EXTENSIONS = listOf(".cr3", ".cr2")
 
     // -- shooting / control (the "Control" page) --------------------------
     // Live view: POST to start/stop, then GET the "flip" image to poll frames.

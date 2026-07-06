@@ -35,6 +35,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -46,6 +47,7 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items as gridItems
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
@@ -93,6 +95,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -465,7 +468,12 @@ private fun FolderRow(name: String, count: Int?, total: Int, onClick: () -> Unit
         Modifier.fillMaxWidth().clickable(onClick = onClick).padding(horizontal = 16.dp, vertical = 16.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text("📁", modifier = Modifier.padding(end = 12.dp))
+        Icon(
+            FolderIcon,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(end = 12.dp).size(20.dp),
+        )
         Text(
             name,
             style = MaterialTheme.typography.bodyLarge,
@@ -520,8 +528,21 @@ private fun PhotoGrid(vm: MainViewModel) {
         val cellWidthPx = with(LocalDensity.current) {
             ((maxWidth - 16.dp - 8.dp * (columns - 1)) / columns).toPx()
         }.roundToInt().coerceAtLeast(1)
+        val gridState = rememberLazyGridState()
+        // Auto-load the next CCAPI page as scrolling nears the end (replaces the
+        // old Prev/Next pager). Pages accumulate, so filters and sorting apply
+        // across everything loaded so far instead of quietly covering one page.
+        LaunchedEffect(gridState) {
+            snapshotFlow {
+                val info = gridState.layoutInfo
+                (info.visibleItemsInfo.lastOrNull()?.index ?: -1) to info.totalItemsCount
+            }.collect { (last, count) ->
+                if (last >= 0 && last >= count - 1 - vm.gridColumns * 2) vm.nextPage()
+            }
+        }
         LazyVerticalGrid(
             columns = GridCells.Fixed(columns),
+            state = gridState,
             modifier = Modifier.fillMaxSize().pinchToZoomColumns(
                 current = { vm.gridColumns },
                 onChange = { vm.setGridColumnCount(it) },
@@ -531,8 +552,15 @@ private fun PhotoGrid(vm: MainViewModel) {
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             gridItems(vm.visibleFiles, key = { it.url }, contentType = { "photo" }) { f -> PhotoCell(vm, f, cellWidthPx) }
-            if (vm.pageCount > 1) {
-                item(span = { GridItemSpan(maxLineSpan) }) { Pager(vm) }
+            if (vm.hasMore || vm.loadingMore) {
+                item(span = { GridItemSpan(maxLineSpan) }, contentType = "loading-more") {
+                    Row(
+                        Modifier.fillMaxWidth().padding(vertical = 16.dp),
+                        horizontalArrangement = Arrangement.Center,
+                    ) {
+                        CircularProgressIndicator(strokeWidth = 2.dp, modifier = Modifier.size(20.dp))
+                    }
+                }
             }
         }
     }
@@ -623,19 +651,6 @@ private fun PhotoCell(vm: MainViewModel, f: RawFile, cellWidthPx: Int) {
     }
 }
 
-@Composable
-private fun Pager(vm: MainViewModel) {
-    Row(
-        Modifier.fillMaxWidth().padding(vertical = 12.dp),
-        horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterHorizontally),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        OutlinedButton(onClick = { vm.prevPage() }, enabled = vm.page > 1) { Text("← Prev") }
-        Text("Page ${vm.page} / ${vm.pageCount}")
-        OutlinedButton(onClick = { vm.nextPage() }, enabled = vm.hasMore) { Text("Next →") }
-    }
-}
-
 // --- bottom selection bar --------------------------------------------------
 
 @Composable
@@ -672,7 +687,14 @@ private fun SelectionBar(
             }
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedButton(onClick = onPickFolder) {
-                    Text(if (vm.destinationUri != null) "📁 ${vm.destinationLabel}" else "Choose folder", maxLines = 1)
+                    Icon(FolderIcon, contentDescription = null, modifier = Modifier.size(16.dp))
+                    Spacer(Modifier.width(6.dp))
+                    Text(
+                        if (vm.destinationUri != null) vm.destinationLabel else "Choose folder",
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.widthIn(max = 180.dp),
+                    )
                 }
                 Spacer(Modifier.weight(1f))
                 if (vm.selected.isNotEmpty()) {
@@ -706,26 +728,33 @@ private fun DownloadsSheet(vm: MainViewModel, job: DownloadUiState, onDismiss: (
             Text("Downloads", style = MaterialTheme.typography.titleLarge)
             Text("${job.status} → ${job.destinationLabel}", style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant)
-            job.files.forEach { f ->
-                val pct = if (f.size != null && f.size > 0) (f.downloaded * 100 / f.size).toInt() else null
-                Column {
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text(f.name, modifier = Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis,
-                            style = MaterialTheme.typography.bodyMedium)
-                        Text(f.status.name.lowercase(Locale.ROOT), style = MaterialTheme.typography.labelSmall)
-                    }
-                    if (f.status == FileStatus.DOWNLOADING) {
-                        if (pct != null) {
-                            LinearProgressIndicator(progress = { pct / 100f }, modifier = Modifier.fillMaxWidth())
-                        } else {
-                            LinearProgressIndicator(Modifier.fillMaxWidth())
+            // Lazy so a several-hundred-file batch doesn't lay out every row on
+            // each progress update; capped height keeps the action row visible.
+            LazyColumn(
+                Modifier.fillMaxWidth().heightIn(max = 480.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                items(job.files) { f ->
+                    val pct = if (f.size != null && f.size > 0) (f.downloaded * 100 / f.size).toInt() else null
+                    Column {
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Text(f.name, modifier = Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis,
+                                style = MaterialTheme.typography.bodyMedium)
+                            Text(f.status.name.lowercase(Locale.ROOT), style = MaterialTheme.typography.labelSmall)
                         }
-                        Text(
-                            formatSize(f.downloaded) + (f.size?.let { " / ${formatSize(it)} ($pct%)" } ?: ""),
-                            style = MaterialTheme.typography.labelSmall,
-                        )
+                        if (f.status == FileStatus.DOWNLOADING) {
+                            if (pct != null) {
+                                LinearProgressIndicator(progress = { pct / 100f }, modifier = Modifier.fillMaxWidth())
+                            } else {
+                                LinearProgressIndicator(Modifier.fillMaxWidth())
+                            }
+                            Text(
+                                formatSize(f.downloaded) + (f.size?.let { " / ${formatSize(it)} ($pct%)" } ?: ""),
+                                style = MaterialTheme.typography.labelSmall,
+                            )
+                        }
+                        f.error?.let { Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.labelSmall) }
                     }
-                    f.error?.let { Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.labelSmall) }
                 }
             }
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -905,14 +934,29 @@ private fun ZoomableImportPhotoPage(file: RawFile, onDismiss: () -> Unit) {
                 }
             }
             .pointerInput(file.path) {
-                detectTapGestures(onDoubleTap = {
-                    if (scale > 1f) { scale = 1f; offset = Offset.Zero } else { scale = 2.5f }
+                detectTapGestures(onDoubleTap = { tap ->
+                    if (scale > 1f) {
+                        scale = 1f
+                        offset = Offset.Zero
+                    } else {
+                        // Zoom about the tapped point: an offset of
+                        // -(tap - centre) * (s - 1) keeps that point stationary
+                        // under the finger, and never exceeds the pan bounds
+                        // (whose max is size/2 * (s - 1)).
+                        val s = 2.5f
+                        offset = Offset(
+                            -(tap.x - size.width / 2f) * (s - 1f),
+                            -(tap.y - size.height / 2f) * (s - 1f),
+                        )
+                        scale = s
+                    }
                 })
             },
         contentAlignment = Alignment.Center,
     ) {
         FullImage(
             file.path,
+            zoomed = scale > 1.5f,
             modifier = Modifier.fillMaxSize().graphicsLayer {
                 scaleX = scale
                 scaleY = scale
@@ -963,6 +1007,26 @@ internal fun KeepImmersive() {
 }
 
 // --- inline icons (avoids pulling in the heavy material-icons-extended dep) --
+
+/** Material "folder" glyph: a tabbed rectangle. Replaces the folder emoji so
+ *  the icon follows the theme's tint instead of the system emoji font. */
+internal val FolderIcon: ImageVector = ImageVector.Builder(
+    name = "Folder",
+    defaultWidth = 24.dp, defaultHeight = 24.dp,
+    viewportWidth = 24f, viewportHeight = 24f,
+).path(fill = SolidColor(Color.White)) {
+    moveTo(10f, 4f)
+    lineTo(4f, 4f)
+    curveToRelative(-1.1f, 0f, -2f, 0.9f, -2f, 2f)
+    verticalLineToRelative(12f)
+    curveToRelative(0f, 1.1f, 0.9f, 2f, 2f, 2f)
+    horizontalLineToRelative(16f)
+    curveToRelative(1.1f, 0f, 2f, -0.9f, 2f, -2f)
+    verticalLineTo(8f)
+    curveToRelative(0f, -1.1f, -0.9f, -2f, -2f, -2f)
+    horizontalLineToRelative(-8f)
+    close()
+}.build()
 
 /** Material "filter_list" glyph: three centered, decreasing bars. */
 internal val FilterListIcon: ImageVector = ImageVector.Builder(

@@ -64,7 +64,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -574,14 +573,29 @@ private fun ZoomablePhotoPage(photo: LocalRawPhoto, onDismiss: () -> Unit) {
                 }
             }
             .pointerInput(photo.path) {
-                detectTapGestures(onDoubleTap = {
-                    if (scale > 1f) { scale = 1f; offset = Offset.Zero } else { scale = 2.5f }
+                detectTapGestures(onDoubleTap = { tap ->
+                    if (scale > 1f) {
+                        scale = 1f
+                        offset = Offset.Zero
+                    } else {
+                        // Zoom about the tapped point: an offset of
+                        // -(tap - centre) * (s - 1) keeps that point stationary
+                        // under the finger, and never exceeds the pan bounds
+                        // (whose max is size/2 * (s - 1)).
+                        val s = 2.5f
+                        offset = Offset(
+                            -(tap.x - size.width / 2f) * (s - 1f),
+                            -(tap.y - size.height / 2f) * (s - 1f),
+                        )
+                        scale = s
+                    }
                 })
             },
         contentAlignment = Alignment.Center,
     ) {
         FullLocalImage(
             photo,
+            zoomed = scale > 1.5f,
             modifier = Modifier.fillMaxSize().graphicsLayer {
                 scaleX = scale
                 scaleY = scale
@@ -592,10 +606,22 @@ private fun ZoomablePhotoPage(photo: LocalRawPhoto, onDismiss: () -> Unit) {
     }
 }
 
+// Zoomed-in decode width for the local full-screen preview. Sampling yields a
+// result in [reqWidth, 2*reqWidth), so 3072 turns the R5's 8192 px embedded
+// JPEG into a 4096 px decode — sharp at 2-5x, within common GPU texture limits.
+private const val ZOOMED_PREVIEW_WIDTH = 3072
+
 @Composable
-private fun FullLocalImage(photo: LocalRawPhoto, modifier: Modifier = Modifier) {
-    val image by produceState<ImageBitmap?>(initialValue = null, key1 = photo.path) {
-        value = RawPreviewLoader.loadFull(photo)
+private fun FullLocalImage(photo: LocalRawPhoto, zoomed: Boolean = false, modifier: Modifier = Modifier) {
+    var image by remember(photo.path) { mutableStateOf<ImageBitmap?>(null) }
+    LaunchedEffect(photo.path) {
+        if (image == null) image = RawPreviewLoader.loadFull(photo)
+    }
+    // Once zoomed in, quietly swap in a higher-resolution decode of the same
+    // embedded JPEG; the default fit-to-screen decode looks soft at 2-5x. The
+    // sharp frame is kept after zooming back out (it draws fine at 1x).
+    LaunchedEffect(photo.path, zoomed) {
+        if (zoomed) RawPreviewLoader.loadFull(photo, reqWidth = ZOOMED_PREVIEW_WIDTH)?.let { image = it }
     }
     val img = image
     if (img != null) {

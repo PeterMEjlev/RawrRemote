@@ -12,6 +12,7 @@ import androidx.compose.runtime.mutableStateMapOf
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.rawr.ccapi.CameraSession
+import com.rawr.ccapi.data.AppPrefs
 import com.rawr.ccapi.download.DownloadController
 import com.rawr.ccapi.download.DownloadRequestData
 import com.rawr.ccapi.download.FileTask
@@ -59,6 +60,10 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     var isFileView by mutableStateOf(false)
         private set
     var browsing by mutableStateOf(false)
+        private set
+    // A next-page append in flight (kept separate from [browsing] so the
+    // pull-to-refresh indicator doesn't fire on every auto-loaded page).
+    var loadingMore by mutableStateOf(false)
         private set
     var browseError by mutableStateOf<String?>(null)
         private set
@@ -108,10 +113,11 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     // (e.g. on rotation) so their choice sticks.
     private var columnsManual = false
 
-    /** Pinch-to-zoom column change (user-driven). */
+    /** Pinch-to-zoom column change (user-driven); persisted across restarts. */
     fun setGridColumnCount(count: Int) {
         gridColumns = count.coerceIn(1, MAX_GRID_COLUMNS)
         columnsManual = true
+        AppPrefs.saveGridColumns(getApplication(), gridColumns)
     }
 
     /** Width-derived default density; ignored once the user has pinched. */
@@ -136,8 +142,15 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     var sortAscending by mutableStateOf(true)
         private set
 
-    fun setSort(key: SortKey) { sortKey = key }
-    fun toggleSortDirection() { sortAscending = !sortAscending }
+    fun setSort(key: SortKey) {
+        sortKey = key
+        AppPrefs.saveSort(getApplication(), sortKey.name, sortAscending)
+    }
+
+    fun toggleSortDirection() {
+        sortAscending = !sortAscending
+        AppPrefs.saveSort(getApplication(), sortKey.name, sortAscending)
+    }
 
     /**
      * Files visible after applying the active filters, then the active sort.
@@ -185,9 +198,44 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     private val client: CcapiClient? get() = CameraSession.client
 
     init {
-        // Auto-connect once when the app launches, using the default settings.
-        // If the camera isn't reachable yet, the user can retry from the screen.
+        restorePrefs()
+        // Flip the UI to disconnected the moment the camera's Wi-Fi drops.
+        // Without this the process stays bound to a dead network — every
+        // request black-holes while the screen still claims to be connected.
+        CameraNetwork.onCameraNetworkLost = {
+            viewModelScope.launch {
+                CameraSession.clear()
+                connected = false
+                deviceName = null
+                connectionError = "Lost the camera's Wi-Fi. Rejoin it, then reconnect."
+            }
+        }
+        // Auto-connect once when the app launches, using the saved (or default)
+        // settings. If the camera isn't reachable yet, the user can retry.
         connect()
+    }
+
+    /** Restore persisted choices (connection form, destination, grid, sort). */
+    private fun restorePrefs() {
+        val saved = AppPrefs.load(getApplication())
+        saved.host?.takeIf { it.isNotBlank() }?.let { host = it }
+        saved.port?.takeIf { it.isNotBlank() }?.let { port = it }
+        saved.username?.let { username = it }
+        saved.sortKey?.let { name -> SortKey.entries.firstOrNull { it.name == name }?.let { sortKey = it } }
+        saved.sortAscending?.let { sortAscending = it }
+        if (saved.gridColumns in 1..MAX_GRID_COLUMNS) {
+            gridColumns = saved.gridColumns
+            columnsManual = true
+        }
+        // Only restore the download folder while its persistable write grant is
+        // still held (revocable in system settings; the folder may also be gone).
+        val uri = saved.destinationUri ?: return
+        val stillGranted = getApplication<Application>().contentResolver.persistedUriPermissions
+            .any { it.uri == uri && it.isWritePermission }
+        if (stillGranted) {
+            destinationUri = uri
+            destinationLabel = saved.destinationLabel ?: (uri.lastPathSegment ?: uri.toString())
+        }
     }
 
     // -- connect ----------------------------------------------------------
@@ -198,8 +246,14 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         connectionError = null
         viewModelScope.launch {
             try {
-                // Pin the app to the camera's (internet-less) Wi-Fi first.
-                CameraNetwork.bindToCameraWifi(getApplication())
+                // Pin the app to the camera's (internet-less) Wi-Fi first. If no
+                // Wi-Fi network exists at all, fail fast with a clear message
+                // instead of letting the HTTP call time out against nothing.
+                if (!CameraNetwork.bindToCameraWifi(getApplication())) {
+                    connectionError = "Phone isn't connected to a Wi-Fi network. Join the camera's Wi-Fi and retry."
+                    connected = false
+                    return@launch
+                }
 
                 // Note: we deliberately do NOT pass the network to the client
                 // (no per-socket socketFactory bind). Routing is handled by the
@@ -220,6 +274,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                 CameraSession.deviceName = name
                 deviceName = name
                 connected = true
+                AppPrefs.saveConnection(getApplication(), host.trim(), port.trim(), username.trim())
                 navigateToRoot()
             } catch (e: CcapiException) {
                 connectionError = e.message
@@ -277,8 +332,8 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
      * breadcrumb each step — so deep, single-child storage trees open straight
      * to the photos. Manual navigation never auto-descends.
      */
-    private fun loadLevel(path: String?, requestedPage: Int = 1, autoDescend: Boolean = false) {
-        browsing = true
+    private fun loadLevel(path: String?, requestedPage: Int = 1, autoDescend: Boolean = false, append: Boolean = false) {
+        if (append) loadingMore = true else browsing = true
         browseError = null
         viewModelScope.launch {
             try {
@@ -298,7 +353,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                             val looksLikeFiles = children.any { it.substringAfterLast('/').contains('.') }
                             if (looksLikeFiles) {
                                 val result = c.listRawFiles(p, pageToLoad)
-                                postFiles(result.files, result.page, result.pageCount, result.totalContents)
+                                postFiles(result.files, result.page, result.pageCount, result.totalContents, append)
                             } else {
                                 postResolvedFolders(c, children, dropEmpty = true)
                             }
@@ -320,6 +375,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                 browseError = e.message ?: "Failed to list folder"
             } finally {
                 browsing = false
+                loadingMore = false
             }
         }
     }
@@ -374,25 +430,30 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    private fun postFiles(list: List<RawFile>, p: Int, pc: Int, total: Int) {
-        isFileView = true
-        files.clear()
-        files.addAll(list)
-        folders.clear()
-        page = p; pageCount = pc; totalContents = total
+    private fun postFiles(list: List<RawFile>, p: Int, pc: Int, total: Int, append: Boolean) {
+        // One atomic snapshot so the grid never observes a half-updated page.
+        Snapshot.withMutableSnapshot {
+            isFileView = true
+            if (!append) files.clear()
+            // Guard against the same page arriving twice (e.g. a re-triggered
+            // append racing a refresh) so keys stay unique.
+            val known = files.mapTo(HashSet()) { it.url }
+            files.addAll(list.filter { it.url !in known })
+            folders.clear()
+            page = p; pageCount = pc; totalContents = total
+        }
     }
 
-    /** Reload the current level (pull-to-refresh / retry). */
+    /** Reload the current level from the first page (pull-to-refresh / retry). */
     fun refresh() {
-        loadLevel(breadcrumbs.last().path, page)
+        loadLevel(breadcrumbs.last().path)
     }
 
+    /** Append the next CCAPI page; the grid calls this as scrolling nears the end. */
     fun nextPage() {
-        if (hasMore) loadLevel(breadcrumbs.last().path, page + 1)
-    }
-
-    fun prevPage() {
-        if (page > 1) loadLevel(breadcrumbs.last().path, page - 1)
+        if (hasMore && !browsing && !loadingMore) {
+            loadLevel(breadcrumbs.last().path, page + 1, append = true)
+        }
     }
 
     // -- selection --------------------------------------------------------
@@ -415,6 +476,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     fun setDestination(uri: Uri, label: String) {
         destinationUri = uri
         destinationLabel = label
+        AppPrefs.saveDestination(getApplication(), uri, label)
     }
 
     fun startDownload() {
