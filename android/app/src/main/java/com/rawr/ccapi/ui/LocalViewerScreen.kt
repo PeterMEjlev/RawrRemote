@@ -245,7 +245,7 @@ private fun LocalFilterSheet(vm: LocalViewerViewModel, onDismiss: () -> Unit) {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(
                     "${vm.visiblePhotos.size} of ${vm.total} shown",
-                    style = MaterialTheme.typography.bodySmall,
+                    style = MaterialTheme.typography.labelSmall.mono(),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.weight(1f).align(Alignment.CenterVertically),
                 )
@@ -334,14 +334,19 @@ private fun LocalGrid(vm: LocalViewerViewModel) {
 
 @Composable
 private fun LocalDateDivider(label: String) {
+    // Engraved-caps date between hairlines — quiet, hardware-style sectioning.
     Row(
         Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(10.dp),
     ) {
-        HorizontalDivider(Modifier.weight(1f))
-        Text(label, style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        HorizontalDivider(Modifier.weight(1f))
+        HorizontalDivider(Modifier.weight(1f), color = MaterialTheme.colorScheme.outlineVariant)
+        Text(
+            label.uppercase(Locale.getDefault()),
+            style = MaterialTheme.typography.labelSmall.engraved(),
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        HorizontalDivider(Modifier.weight(1f), color = MaterialTheme.colorScheme.outlineVariant)
     }
 }
 
@@ -377,7 +382,7 @@ private fun LocalPhotoCell(
     Card(
         modifier = Modifier.clickable(onClick = onOpen),
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-        shape = RoundedCornerShape(10.dp),
+        shape = MaterialTheme.shapes.medium,
     ) {
         Column {
             Box(Modifier.fillMaxWidth().aspectRatio(3f / 2f)) {
@@ -396,15 +401,16 @@ private fun LocalPhotoCell(
                 ) {
                     Icon(ShareIcon, contentDescription = "Share", tint = Color.White)
                 }
-                // Star rating badge (only when the RAW carries one).
+                // Star rating badge (only when the RAW carries one) — amber,
+                // matching the Import grid's top-plate readout style.
                 photo.rating.takeIf { it > 0 }?.let { stars ->
                     Text(
                         "★$stars",
-                        color = Color.White,
+                        color = MaterialTheme.colorScheme.primary,
                         style = MaterialTheme.typography.labelMedium,
                         modifier = Modifier.align(Alignment.BottomStart).padding(6.dp)
                             .clip(RoundedCornerShape(6.dp))
-                            .background(Color.Black.copy(alpha = 0.45f))
+                            .background(Color.Black.copy(alpha = 0.55f))
                             .padding(horizontal = 6.dp, vertical = 2.dp),
                     )
                 }
@@ -413,7 +419,8 @@ private fun LocalPhotoCell(
                 photo.name,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
-                style = MaterialTheme.typography.labelMedium,
+                style = MaterialTheme.typography.labelSmall.mono(),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp),
             )
         }
@@ -452,7 +459,11 @@ private fun RawPlaceholder(modifier: Modifier = Modifier) {
         modifier.background(MaterialTheme.colorScheme.surfaceVariant),
         contentAlignment = Alignment.Center,
     ) {
-        Text("RAW", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(
+            "RAW",
+            style = MaterialTheme.typography.labelSmall.mono().engraved(),
+            color = MaterialTheme.colorScheme.outline,
+        )
     }
 }
 
@@ -488,12 +499,13 @@ internal fun LocalPreviewOverlay(vm: LocalViewerViewModel, photos: List<LocalRaw
             Column(Modifier.weight(1f)) {
                 Text(
                     current.name, color = Color.White,
-                    maxLines = 1, overflow = TextOverflow.Ellipsis, style = MaterialTheme.typography.titleMedium,
+                    maxLines = 1, overflow = TextOverflow.Ellipsis,
+                    style = MaterialTheme.typography.titleSmall.mono(),
                 )
                 Text(
                     "${pagerState.currentPage + 1} / ${photos.size}",
-                    color = Color.White.copy(alpha = 0.7f),
-                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.primary,
+                    style = MaterialTheme.typography.labelSmall.mono(),
                 )
             }
             TextButton(onClick = { vm.previewPhoto = null }) { Text("Close") }

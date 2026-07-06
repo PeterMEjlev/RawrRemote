@@ -84,7 +84,7 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.darkColorScheme
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
@@ -160,13 +160,6 @@ class MainActivity : ComponentActivity() {
 
     private val requestNotifications =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { /* best-effort */ }
-}
-
-@Composable
-private fun RawrTheme(content: @Composable () -> Unit) {
-    MaterialTheme(colorScheme = darkColorScheme()) {
-        Surface(color = MaterialTheme.colorScheme.background) { content() }
-    }
 }
 
 @Composable
@@ -264,9 +257,19 @@ private fun ConnectScreen(vm: MainViewModel) {
             verticalArrangement = Arrangement.spacedBy(14.dp),
             modifier = Modifier.fillMaxWidth().widthIn(max = 480.dp),
         ) {
-            Text("Rawr Remote", style = MaterialTheme.typography.headlineMedium)
+            // Engraved wordmark — tracked-out caps like lettering on a camera body.
             Text(
-                "Join the camera's Wi-Fi, then connect. Make sure any VPN / ad-blocker is off.",
+                "RAWR REMOTE",
+                style = MaterialTheme.typography.headlineSmall.engraved(),
+            )
+            Text(
+                "CANON CCAPI",
+                style = MaterialTheme.typography.labelSmall.mono(),
+                color = MaterialTheme.colorScheme.primary,
+            )
+            Spacer(Modifier.height(4.dp))
+            Text(
+                "Join the camera's Wi-Fi, then connect. Make sure any VPN or ad-blocker is off.",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -371,8 +374,8 @@ private fun BrowseTopBar(vm: MainViewModel, onFilter: () -> Unit) {
         actions = {
             vm.totalCameraImages?.let { total ->
                 Text(
-                    "$total images",
-                    style = MaterialTheme.typography.bodyMedium,
+                    "${formatCount(total)} IMG",
+                    style = MaterialTheme.typography.labelMedium.mono(),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(end = 8.dp),
                 )
@@ -435,10 +438,18 @@ private fun Breadcrumbs(vm: MainViewModel) {
         verticalAlignment = Alignment.CenterVertically,
     ) {
         vm.breadcrumbs.forEachIndexed { i, crumb ->
-            TextButton(onClick = { vm.goToCrumb(i) }, contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp)) {
+            // The trail stays quiet gray; only the current location reads bright.
+            val current = i == vm.breadcrumbs.lastIndex
+            TextButton(
+                onClick = { vm.goToCrumb(i) },
+                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
+                colors = ButtonDefaults.textButtonColors(
+                    contentColor = if (current) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant,
+                ),
+            ) {
                 Text(crumb.label, maxLines = 1)
             }
-            if (i < vm.breadcrumbs.lastIndex) Text("›", color = MaterialTheme.colorScheme.onSurfaceVariant)
+            if (!current) Text("›", color = MaterialTheme.colorScheme.outline)
         }
     }
 }
@@ -486,21 +497,21 @@ private fun FolderRow(name: String, count: Int?, total: Int, onClick: () -> Unit
                 CircularProgressIndicator(strokeWidth = 2.dp, modifier = Modifier.size(16.dp))
             count >= 0 -> {
                 val frac = (if (total > 0) count.toFloat() / total else 0f).coerceIn(0f, 1f)
-                Text(formatCount(count), style = MaterialTheme.typography.bodyMedium)
+                Text(formatCount(count), style = MaterialTheme.typography.labelMedium.mono())
                 Spacer(Modifier.width(10.dp))
                 Box(
-                    Modifier.width(56.dp).height(6.dp).clip(RoundedCornerShape(3.dp))
+                    Modifier.width(56.dp).height(4.dp).clip(RoundedCornerShape(2.dp))
                         .background(MaterialTheme.colorScheme.surfaceVariant),
                 ) {
                     Box(
                         Modifier.fillMaxHeight().fillMaxWidth(frac)
-                            .clip(RoundedCornerShape(3.dp)).background(MaterialTheme.colorScheme.primary),
+                            .clip(RoundedCornerShape(2.dp)).background(MaterialTheme.colorScheme.primary),
                     )
                 }
                 Spacer(Modifier.width(8.dp))
                 Text(
                     "${(frac * 100).roundToInt()}%",
-                    style = MaterialTheme.typography.labelSmall,
+                    style = MaterialTheme.typography.labelSmall.mono(),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.width(36.dp),
                 )
@@ -595,8 +606,9 @@ internal fun Modifier.pinchToZoomColumns(
 @Composable
 private fun PhotoCell(vm: MainViewModel, f: RawFile, cellWidthPx: Int) {
     val checked = vm.selected.containsKey(f.url)
+    // Selection reads as a tungsten ring; unselected cells sit on a hairline.
     val border = if (checked) {
-        BorderStroke(3.dp, MaterialTheme.colorScheme.primary)
+        BorderStroke(2.dp, MaterialTheme.colorScheme.primary)
     } else {
         BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
     }
@@ -606,7 +618,7 @@ private fun PhotoCell(vm: MainViewModel, f: RawFile, cellWidthPx: Int) {
     Card(
         modifier = Modifier.clickable { vm.openPreview(f) },
         border = border,
-        shape = RoundedCornerShape(10.dp),
+        shape = MaterialTheme.shapes.medium,
     ) {
         Column {
             Box(Modifier.fillMaxWidth().aspectRatio(3f / 2f)) {
@@ -627,15 +639,16 @@ private fun PhotoCell(vm: MainViewModel, f: RawFile, cellWidthPx: Int) {
                 ) {
                     Checkbox(checked = checked, onCheckedChange = { vm.toggle(f) })
                 }
-                // Star rating badge (only when the camera reports one).
+                // Star rating badge (only when the camera reports one) — amber,
+                // like a top-plate readout.
                 f.rating?.takeIf { it > 0 }?.let { stars ->
                     Text(
                         "★$stars",
-                        color = Color.White,
+                        color = MaterialTheme.colorScheme.primary,
                         style = MaterialTheme.typography.labelMedium,
                         modifier = Modifier.align(Alignment.BottomStart).padding(6.dp)
                             .clip(RoundedCornerShape(6.dp))
-                            .background(Color.Black.copy(alpha = 0.45f))
+                            .background(Color.Black.copy(alpha = 0.55f))
                             .padding(horizontal = 6.dp, vertical = 2.dp),
                     )
                 }
@@ -644,7 +657,8 @@ private fun PhotoCell(vm: MainViewModel, f: RawFile, cellWidthPx: Int) {
                 f.name,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
-                style = MaterialTheme.typography.labelMedium,
+                style = MaterialTheme.typography.labelSmall.mono(),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp),
             )
         }
@@ -660,57 +674,66 @@ private fun SelectionBar(
     onPickFolder: () -> Unit,
     onShowDownloads: () -> Unit,
 ) {
-    Surface(tonalElevation = 3.dp, shadowElevation = 8.dp) {
-        Column(Modifier.fillMaxWidth().padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            if (job.files.isNotEmpty()) {
-                val done = job.files.count { it.status == FileStatus.DONE }
-                val total = job.files.size
-                Row(
-                    Modifier.fillMaxWidth().clickable { onShowDownloads() },
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    if (job.status == JobStatus.RUNNING) {
-                        CircularProgressIndicator(strokeWidth = 2.dp, modifier = Modifier.size(16.dp))
-                    }
-                    Text(
-                        when (job.status) {
-                            JobStatus.RUNNING -> "Downloading $done/$total — tap for details"
-                            JobStatus.DONE -> "Downloaded $done/$total — tap for details"
-                            JobStatus.ERROR -> "Finished with errors — tap for details"
-                            JobStatus.CANCELLED -> "Cancelled — tap for details"
-                            else -> ""
-                        },
-                        style = MaterialTheme.typography.bodySmall,
-                    )
-                }
-            }
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedButton(onClick = onPickFolder) {
-                    Icon(FolderIcon, contentDescription = null, modifier = Modifier.size(16.dp))
-                    Spacer(Modifier.width(6.dp))
-                    Text(
-                        if (vm.destinationUri != null) vm.destinationLabel else "Choose folder",
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.widthIn(max = 180.dp),
-                    )
-                }
-                Spacer(Modifier.weight(1f))
-                if (vm.selected.isNotEmpty()) {
-                    TextButton(
-                        onClick = { vm.clearSelection() },
-                        contentPadding = PaddingValues(horizontal = 8.dp),
+    // A hairline above a panel surface, not a floating shadow — the bar should
+    // read as part of the body, like a camera's control strip.
+    Surface(color = MaterialTheme.colorScheme.surfaceContainer) {
+        Column(Modifier.fillMaxWidth()) {
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+            Column(Modifier.fillMaxWidth().padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                if (job.files.isNotEmpty()) {
+                    val done = job.files.count { it.status == FileStatus.DONE }
+                    val total = job.files.size
+                    Row(
+                        Modifier.fillMaxWidth().clickable { onShowDownloads() },
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
-                        Text("Clear")
+                        if (job.status == JobStatus.RUNNING) {
+                            CircularProgressIndicator(strokeWidth = 2.dp, modifier = Modifier.size(16.dp))
+                        }
+                        Text(
+                            when (job.status) {
+                                JobStatus.RUNNING -> "Downloading $done/$total — tap for details"
+                                JobStatus.DONE -> "Downloaded $done/$total — tap for details"
+                                JobStatus.ERROR -> "Finished with errors — tap for details"
+                                JobStatus.CANCELLED -> "Cancelled — tap for details"
+                                else -> ""
+                            },
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
                     }
                 }
-                Text("${vm.selected.size} selected", style = MaterialTheme.typography.bodyMedium)
-                Button(
-                    onClick = { vm.startDownload() },
-                    enabled = vm.destinationUri != null && vm.selected.isNotEmpty() && job.status != JobStatus.RUNNING,
-                ) {
-                    Text("Download")
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedButton(onClick = onPickFolder) {
+                        Icon(FolderIcon, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Spacer(Modifier.width(6.dp))
+                        Text(
+                            if (vm.destinationUri != null) vm.destinationLabel else "Choose folder",
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.widthIn(max = 180.dp),
+                        )
+                    }
+                    Spacer(Modifier.weight(1f))
+                    if (vm.selected.isNotEmpty()) {
+                        TextButton(
+                            onClick = { vm.clearSelection() },
+                            contentPadding = PaddingValues(horizontal = 8.dp),
+                            colors = ButtonDefaults.textButtonColors(
+                                contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                            ),
+                        ) {
+                            Text("Clear")
+                        }
+                    }
+                    Text("${vm.selected.size} SEL", style = MaterialTheme.typography.labelMedium.mono())
+                    Button(
+                        onClick = { vm.startDownload() },
+                        enabled = vm.destinationUri != null && vm.selected.isNotEmpty() && job.status != JobStatus.RUNNING,
+                    ) {
+                        Text("Download")
+                    }
                 }
             }
         }
@@ -726,7 +749,7 @@ private fun DownloadsSheet(vm: MainViewModel, job: DownloadUiState, onDismiss: (
         KeepImmersive()
         Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Text("Downloads", style = MaterialTheme.typography.titleLarge)
-            Text("${job.status} → ${job.destinationLabel}", style = MaterialTheme.typography.bodySmall,
+            Text("${job.status} → ${job.destinationLabel}", style = MaterialTheme.typography.labelSmall.mono(),
                 color = MaterialTheme.colorScheme.onSurfaceVariant)
             // Lazy so a several-hundred-file batch doesn't lay out every row on
             // each progress update; capped height keeps the action row visible.
@@ -739,8 +762,16 @@ private fun DownloadsSheet(vm: MainViewModel, job: DownloadUiState, onDismiss: (
                     Column {
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             Text(f.name, modifier = Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis,
-                                style = MaterialTheme.typography.bodyMedium)
-                            Text(f.status.name.lowercase(Locale.ROOT), style = MaterialTheme.typography.labelSmall)
+                                style = MaterialTheme.typography.bodyMedium.mono())
+                            Text(
+                                f.status.name.lowercase(Locale.ROOT),
+                                style = MaterialTheme.typography.labelSmall.mono(),
+                                color = when (f.status) {
+                                    FileStatus.ERROR -> MaterialTheme.colorScheme.error
+                                    FileStatus.DONE -> MaterialTheme.colorScheme.primary
+                                    else -> MaterialTheme.colorScheme.onSurfaceVariant
+                                },
+                            )
                         }
                         if (f.status == FileStatus.DOWNLOADING) {
                             if (pct != null) {
@@ -750,7 +781,8 @@ private fun DownloadsSheet(vm: MainViewModel, job: DownloadUiState, onDismiss: (
                             }
                             Text(
                                 formatSize(f.downloaded) + (f.size?.let { " / ${formatSize(it)} ($pct%)" } ?: ""),
-                                style = MaterialTheme.typography.labelSmall,
+                                style = MaterialTheme.typography.labelSmall.mono(),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }
                         f.error?.let { Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.labelSmall) }
@@ -816,7 +848,7 @@ private fun FilterSheet(vm: MainViewModel, onDismiss: () -> Unit) {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(
                     "${vm.visibleFiles.size} of ${vm.files.size} shown",
-                    style = MaterialTheme.typography.bodySmall,
+                    style = MaterialTheme.typography.labelSmall.mono(),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.weight(1f).align(Alignment.CenterVertically),
                 )
@@ -858,12 +890,12 @@ private fun PreviewOverlay(vm: MainViewModel, files: List<RawFile>, startIndex: 
                     color = Color.White,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
-                    style = MaterialTheme.typography.titleMedium,
+                    style = MaterialTheme.typography.titleSmall.mono(),
                 )
                 Text(
                     "${pagerState.currentPage + 1} / ${files.size}",
-                    color = Color.White.copy(alpha = 0.7f),
-                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.primary,
+                    style = MaterialTheme.typography.labelSmall.mono(),
                 )
             }
             TextButton(onClick = { vm.closePreview() }) { Text("Close") }

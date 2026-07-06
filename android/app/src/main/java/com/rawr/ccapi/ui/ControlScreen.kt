@@ -543,7 +543,7 @@ private fun LiveViewport(vm: ControlViewModel, modifier: Modifier) {
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 CircularProgressIndicator()
-                Text("Starting live view…", color = Color.White)
+                Text("Starting live view…", color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
 
@@ -632,8 +632,10 @@ private fun SettingPill(
 ) {
     val value = setting?.value?.takeIf { it.isNotBlank() } ?: "—"
     val enabled = setting?.adjustable == true
+    // Top-plate readout: quiet tracked label above an amber monospace value,
+    // like the LCD on a pro body. Values the camera won't adjust stay gray.
     Surface(
-        shape = RoundedCornerShape(12.dp),
+        shape = MaterialTheme.shapes.medium,
         color = MaterialTheme.colorScheme.surfaceVariant,
         modifier = modifier.settingValueGesture(enabled, onClick, onStep),
     ) {
@@ -642,7 +644,12 @@ private fun SettingPill(
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Text(label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            Text(value, style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onSurface, maxLines = 1)
+            Text(
+                value,
+                style = MaterialTheme.typography.titleSmall.mono(),
+                color = if (enabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+            )
         }
     }
 }
@@ -837,7 +844,7 @@ private fun MoreRow(label: String, value: String, enabled: Boolean, onClick: () 
         )
         Text(
             value,
-            style = MaterialTheme.typography.titleSmall,
+            style = MaterialTheme.typography.titleSmall.mono(),
             color = if (enabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
